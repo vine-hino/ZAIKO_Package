@@ -67,6 +67,14 @@ dependencies {
     implementation(project(":feature:ht-home"))
     implementation(project(":feature:ht-operations"))
 
+    implementation(project(":data:connector-api"))
+    implementation(project(":data:connector-fake"))
+    implementation(project(":data:connector-ftp"))
+    implementation(project(":data:connector-db"))
+    implementation(project(":data:connector-cloud"))
+    implementation(project(":core:database"))
+
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -91,4 +99,7 @@ dependencies {
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
 }

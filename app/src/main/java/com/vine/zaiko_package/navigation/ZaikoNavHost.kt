@@ -11,7 +11,7 @@ import com.vine.auth.LoginRoute
 import com.vine.ht_home.HtHomeRoute
 import com.vine.ht_operations.HtAdjustmentScreen
 import com.vine.ht_operations.HtCompletedScreen
-import com.vine.ht_operations.HtInboundScreen
+import com.vine.ht_operations.HtInboundRoute
 import com.vine.ht_operations.HtMoveScreen
 import com.vine.ht_operations.HtOutboundScreen
 import com.vine.ht_operations.HtStockHistoryScreen
@@ -62,10 +62,10 @@ fun ZaikoNavHost() {
         }
 
         composable(ZaikoRoute.HT_INBOUND) {
-            HtInboundScreen(
+            HtInboundRoute(
                 onBack = { navController.popBackStack() },
-                onComplete = {
-                    navController.navigate(ZaikoRoute.htResult("入庫を登録しました"))
+                onComplete = { message ->
+                    navController.navigate(ZaikoRoute.htResult(message))
                 },
             )
         }
