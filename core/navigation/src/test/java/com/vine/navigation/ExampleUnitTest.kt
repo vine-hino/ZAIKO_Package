@@ -1,4 +1,4 @@
-package com.vine.ht_home
+package com.vine.navigation
 
 import org.junit.Test
 
