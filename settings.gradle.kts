@@ -11,6 +11,7 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -20,5 +21,10 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "ZAIKO_Package"
+
 include(":app")
- 
+include(":core:designsystem")
+include(":core:navigation")
+include(":feature:auth")
+include(":feature:ht-home")
+include(":feature:ht-operations")
