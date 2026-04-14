@@ -10,8 +10,15 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/core" />
+            <option value="$PROJECT_DIR$/core/database" />
             <option value="$PROJECT_DIR$/core/designsystem" />
             <option value="$PROJECT_DIR$/core/navigation" />
+            <option value="$PROJECT_DIR$/data" />
+            <option value="$PROJECT_DIR$/data/connector-api" />
+            <option value="$PROJECT_DIR$/data/connector-cloud" />
+            <option value="$PROJECT_DIR$/data/connector-db" />
+            <option value="$PROJECT_DIR$/data/connector-fake" />
+            <option value="$PROJECT_DIR$/data/connector-ftp" />
             <option value="$PROJECT_DIR$/feature" />
             <option value="$PROJECT_DIR$/feature/auth" />
             <option value="$PROJECT_DIR$/feature/ht-home" />

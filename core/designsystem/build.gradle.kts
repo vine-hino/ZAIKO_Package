@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.vine.zaiko.core.designsystem"
+    namespace = "com.vine.designsystem"
     compileSdk = 34
 
     defaultConfig {
