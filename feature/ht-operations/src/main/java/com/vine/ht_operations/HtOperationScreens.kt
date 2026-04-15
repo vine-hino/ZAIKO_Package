@@ -24,18 +24,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.vine.designsystem.component.ZaikoScreenScaffold
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.collectAsState
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun HtStockListScreen(
     onBack: () -> Unit,
     onOpenHistory: () -> Unit,
+    viewModel: HtStockListViewModel = hiltViewModel(),
 ) {
-    val items = listOf(
-        "ITEM-001 / ネジ M3 / A-01 / 120",
-        "ITEM-002 / ボルト M5 / A-02 / 56",
-        "ITEM-003 / ワッシャー / B-01 / 240",
-    )
-    val search = remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
 
     ZaikoScreenScaffold(
         title = "HT 在庫照会",
@@ -50,31 +54,71 @@ fun HtStockListScreen(
         ) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = search.value,
-                onValueChange = { search.value = it },
+                value = uiState.keyword,
+                onValueChange = viewModel::onKeywordChanged,
                 label = { Text("商品コード / バーコード") },
                 singleLine = true,
             )
 
-            items
-                .filter { it.contains(search.value, ignoreCase = true) || search.value.isBlank() }
-                .forEach { item ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = viewModel::search,
+                enabled = !uiState.isLoading,
+            ) {
+                Text(if (uiState.isLoading) "検索中..." else "検索")
+            }
+
+            uiState.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            if (!uiState.isLoading && uiState.items.isEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        modifier = Modifier.padding(16.dp),
+                        text = "該当する在庫がありません",
+                    )
+                }
+            }
+
+            uiState.items.forEach { item ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
+                        Text(
+                            text = "${item.productCode} / ${item.productName}",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            text = "倉庫: ${item.warehouseCode} ${item.warehouseName}",
+                        )
+                        Text(
+                            text = "ロケーション: ${item.locationCode} ${item.locationName}",
+                        )
+                        Text(
+                            text = "在庫数: ${item.quantity}",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+
+                        TextButton(
+                            modifier = Modifier.padding(top = 8.dp),
+                            onClick = onOpenHistory,
                         ) {
-                            Text(text = item)
-                            TextButton(
-                                modifier = Modifier.padding(top = 8.dp),
-                                onClick = onOpenHistory,
-                            ) {
-                                Text("履歴を見る")
-                            }
+                            Text("履歴を見る")
                         }
                     }
                 }
+            }
         }
     }
 }
@@ -82,12 +126,9 @@ fun HtStockListScreen(
 @Composable
 fun HtStockHistoryScreen(
     onBack: () -> Unit,
+    viewModel: HtStockHistoryViewModel = hiltViewModel(),
 ) {
-    val histories = listOf(
-        "2026-04-14 09:00 入庫 +100 担当: 山田",
-        "2026-04-14 10:20 出庫 -10 担当: 佐藤",
-        "2026-04-14 14:30 調整 -2 担当: 鈴木",
-    )
+    val uiState by viewModel.uiState.collectAsState()
 
     ZaikoScreenScaffold(
         title = "HT 在庫履歴",
@@ -100,127 +141,354 @@ fun HtStockHistoryScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            histories.forEach { history ->
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = viewModel::refresh,
+                enabled = !uiState.isLoading,
+            ) {
+                Text(if (uiState.isLoading) "読込中..." else "再読込")
+            }
+
+            uiState.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            if (!uiState.isLoading && uiState.items.isEmpty()) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         modifier = Modifier.padding(16.dp),
-                        text = history,
+                        text = "履歴がありません",
                     )
+                }
+            }
+
+            uiState.items.forEach { history ->
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = formatHistoryDateTime(history.operatedAtEpochMillis),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Text(
+                            text = "${history.operationType}  ${signedQuantity(history.deltaQuantity)}",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(text = "${history.productCode} / ${history.productName}")
+                        Text(text = "倉庫: ${history.warehouseCode}")
+                        Text(text = "ロケーション: ${history.locationCode}")
+                        Text(text = "担当: ${history.operatorName}")
+                        history.note?.takeIf { it.isNotBlank() }?.let {
+                            Text(text = "備考: $it")
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+private fun formatHistoryDateTime(epochMillis: Long): String {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    return Instant.ofEpochMilli(epochMillis)
+        .atZone(ZoneId.systemDefault())
+        .format(formatter)
+}
+
+private fun signedQuantity(quantity: Long): String {
+    return if (quantity > 0) "+$quantity" else quantity.toString()
+}
+
 @Composable
 fun HtInboundScreen(
     onBack: () -> Unit,
     onComplete: () -> Unit,
+    viewModel: HtInboundViewModel = hiltViewModel(),
 ) {
-    BasicOperationScreen(
-        title = "HT 入庫登録",
-        firstLabel = "商品コード",
-        secondLabel = "入庫先ロケーション",
-        onBack = onBack,
-        onComplete = onComplete,
-    )
-}
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-@Composable
-fun HtOutboundScreen(
-    onBack: () -> Unit,
-    onComplete: () -> Unit,
-) {
-    BasicOperationScreen(
-        title = "HT 出庫登録",
-        firstLabel = "商品コード",
-        secondLabel = "出庫元ロケーション",
-        onBack = onBack,
-        onComplete = onComplete,
-    )
-}
+    LaunchedEffect(uiState.completedMessage) {
+        if (uiState.completedMessage != null) {
+            onComplete()
+            viewModel.consumeCompleted()
+        }
+    }
 
-@Composable
-fun HtMoveScreen(
-    onBack: () -> Unit,
-    onComplete: () -> Unit,
-) {
-    val productCode = remember { mutableStateOf("") }
-    val fromLocation = remember { mutableStateOf("") }
-    val toLocation = remember { mutableStateOf("") }
-    val quantity = remember { mutableStateOf("") }
-    val note = remember { mutableStateOf("") }
-
-    val canSave =
-        productCode.value.isNotBlank() &&
-                fromLocation.value.isNotBlank() &&
-                toLocation.value.isNotBlank() &&
-                quantity.value.toIntOrNull()?.let { it > 0 } == true
+    val canSave = uiState.productCode.isNotBlank() &&
+            uiState.locationCode.isNotBlank() &&
+            (uiState.quantity.toLongOrNull()?.let { it > 0L } == true) &&
+            !uiState.isSaving
 
     ZaikoScreenScaffold(
-        title = "HT 在庫移動",
+        title = "HT 入庫登録",
         onBack = onBack,
     ) { padding ->
-        ScrollForm(
-            padding = padding,
-        ) {
+        ScrollForm(padding = padding) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = productCode.value,
-                onValueChange = { productCode.value = it },
+                value = uiState.productCode,
+                onValueChange = viewModel::onProductCodeChanged,
                 label = { Text("商品コード") },
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = fromLocation.value,
-                onValueChange = { fromLocation.value = it },
-                label = { Text("移動元ロケーション") },
+                value = uiState.locationCode,
+                onValueChange = viewModel::onLocationCodeChanged,
+                label = { Text("入庫先ロケーション") },
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = toLocation.value,
-                onValueChange = { toLocation.value = it },
-                label = { Text("移動先ロケーション") },
-                singleLine = true,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = quantity.value,
-                onValueChange = { quantity.value = it },
+                value = uiState.quantity,
+                onValueChange = viewModel::onQuantityChanged,
                 label = { Text("数量") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = note.value,
-                onValueChange = { note.value = it },
+                value = uiState.note,
+                onValueChange = viewModel::onNoteChanged,
                 label = { Text("備考") },
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
+
+            uiState.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = canSave,
-                onClick = onComplete,
+                onClick = viewModel::submit,
             ) {
-                Text("登録")
+                Text(
+                    text = if (uiState.isSaving) "登録中..." else "登録"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HtOutboundScreen(
+    onBack: () -> Unit,
+    onComplete: () -> Unit,
+    viewModel: HtOutboundViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.completedMessage) {
+        if (uiState.completedMessage != null) {
+            onComplete()
+            viewModel.consumeCompleted()
+        }
+    }
+
+    val canSave = uiState.productCode.isNotBlank() &&
+            uiState.locationCode.isNotBlank() &&
+            (uiState.quantity.toLongOrNull()?.let { it > 0L } == true) &&
+            !uiState.isSaving
+
+    ZaikoScreenScaffold(
+        title = "HT 出庫登録",
+        onBack = onBack,
+    ) { padding ->
+        ScrollForm(padding = padding) {
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.productCode,
+                onValueChange = viewModel::onProductCodeChanged,
+                label = { Text("商品コード") },
+                singleLine = true,
+                enabled = !uiState.isSaving,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.locationCode,
+                onValueChange = viewModel::onLocationCodeChanged,
+                label = { Text("出庫元ロケーション") },
+                singleLine = true,
+                enabled = !uiState.isSaving,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.quantity,
+                onValueChange = viewModel::onQuantityChanged,
+                label = { Text("数量") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                enabled = !uiState.isSaving,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.note,
+                onValueChange = viewModel::onNoteChanged,
+                label = { Text("備考") },
+                singleLine = true,
+                enabled = !uiState.isSaving,
+            )
+
+            uiState.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = canSave,
+                onClick = viewModel::submit,
+            ) {
+                Text(
+                    text = if (uiState.isSaving) "登録中..." else "登録"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HtMoveScreen(
+    onBack: () -> Unit,
+    onComplete: () -> Unit,
+    viewModel: HtMoveViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.completedMessage) {
+        if (uiState.completedMessage != null) {
+            onComplete()
+            viewModel.consumeCompleted()
+        }
+    }
+
+    val canSave = uiState.productCode.isNotBlank() &&
+            uiState.fromLocationCode.isNotBlank() &&
+            uiState.toLocationCode.isNotBlank() &&
+            uiState.fromLocationCode != uiState.toLocationCode &&
+            (uiState.quantity.toLongOrNull()?.let { it > 0L } == true) &&
+            !uiState.isSaving
+
+    ZaikoScreenScaffold(
+        title = "HT 移動登録",
+        onBack = onBack,
+    ) { padding ->
+        ScrollForm(padding = padding) {
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.productCode,
+                onValueChange = viewModel::onProductCodeChanged,
+                label = { Text("商品コード") },
+                singleLine = true,
+                enabled = !uiState.isSaving,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.fromLocationCode,
+                onValueChange = viewModel::onFromLocationCodeChanged,
+                label = { Text("移動元ロケーション") },
+                singleLine = true,
+                enabled = !uiState.isSaving,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.toLocationCode,
+                onValueChange = viewModel::onToLocationCodeChanged,
+                label = { Text("移動先ロケーション") },
+                singleLine = true,
+                enabled = !uiState.isSaving,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.quantity,
+                onValueChange = viewModel::onQuantityChanged,
+                label = { Text("数量") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                enabled = !uiState.isSaving,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.note,
+                onValueChange = viewModel::onNoteChanged,
+                label = { Text("備考") },
+                singleLine = true,
+                enabled = !uiState.isSaving,
+            )
+
+            uiState.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = canSave,
+                onClick = viewModel::submit,
+            ) {
+                Text(
+                    text = if (uiState.isSaving) "登録中..." else "登録"
+                )
             }
         }
     }
@@ -230,17 +498,21 @@ fun HtMoveScreen(
 fun HtStocktakeScreen(
     onBack: () -> Unit,
     onComplete: () -> Unit,
+    viewModel: HtStocktakeViewModel = hiltViewModel(),
 ) {
-    val productCode = remember { mutableStateOf("") }
-    val location = remember { mutableStateOf("") }
-    val systemQty = remember { mutableStateOf("100") }
-    val actualQty = remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
 
-    val diff = (actualQty.value.toIntOrNull() ?: 0) - (systemQty.value.toIntOrNull() ?: 0)
-    val canSave =
-        productCode.value.isNotBlank() &&
-                location.value.isNotBlank() &&
-                actualQty.value.toIntOrNull() != null
+    LaunchedEffect(uiState.completedMessage) {
+        if (uiState.completedMessage != null) {
+            onComplete()
+            viewModel.consumeCompleted()
+        }
+    }
+
+    val canSave = uiState.productCode.isNotBlank() &&
+            uiState.locationCode.isNotBlank() &&
+            (uiState.actualQuantity.toLongOrNull()?.let { it >= 0L } == true) &&
+            !uiState.isSaving
 
     ZaikoScreenScaffold(
         title = "HT 棚卸入力",
@@ -249,59 +521,72 @@ fun HtStocktakeScreen(
         ScrollForm(padding = padding) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = productCode.value,
-                onValueChange = { productCode.value = it },
+                value = uiState.productCode,
+                onValueChange = viewModel::onProductCodeChanged,
                 label = { Text("商品コード") },
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = location.value,
-                onValueChange = { location.value = it },
+                value = uiState.locationCode,
+                onValueChange = viewModel::onLocationCodeChanged,
                 label = { Text("ロケーション") },
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = systemQty.value,
-                onValueChange = { systemQty.value = it },
-                label = { Text("帳簿在庫数") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = actualQty.value,
-                onValueChange = { actualQty.value = it },
+                value = uiState.actualQuantity,
+                onValueChange = viewModel::onActualQuantityChanged,
                 label = { Text("実棚数") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.note,
+                onValueChange = viewModel::onNoteChanged,
+                label = { Text("備考") },
+                enabled = !uiState.isSaving,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "差異: $diff",
-                style = MaterialTheme.typography.titleMedium,
+                text = "※ この画面では棚卸を保存します。在庫へ反映されるのは確定時です。",
+                style = MaterialTheme.typography.bodySmall,
             )
+
+            uiState.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = canSave,
-                onClick = onComplete,
+                onClick = viewModel::submit,
             ) {
-                Text("保存")
+                Text(
+                    text = if (uiState.isSaving) "保存中..." else "保存"
+                )
             }
         }
     }
@@ -311,18 +596,23 @@ fun HtStocktakeScreen(
 fun HtAdjustmentScreen(
     onBack: () -> Unit,
     onComplete: () -> Unit,
+    viewModel: HtAdjustmentViewModel = hiltViewModel(),
 ) {
-    val productCode = remember { mutableStateOf("") }
-    val location = remember { mutableStateOf("") }
-    val currentQty = remember { mutableStateOf("100") }
-    val deltaQty = remember { mutableStateOf("") }
-    val reason = remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
 
-    val canSave =
-        productCode.value.isNotBlank() &&
-                location.value.isNotBlank() &&
-                deltaQty.value.toIntOrNull() != null &&
-                reason.value.isNotBlank()
+    LaunchedEffect(uiState.completedMessage) {
+        if (uiState.completedMessage != null) {
+            onComplete()
+            viewModel.consumeCompleted()
+        }
+    }
+
+    val canSave = uiState.productCode.isNotBlank() &&
+            uiState.locationCode.isNotBlank() &&
+            uiState.reasonCode.isNotBlank() &&
+            (uiState.adjustQuantity.toLongOrNull()?.let { it != 0L } == true) &&
+            !(uiState.reasonCode == "OTHER" && uiState.note.isBlank()) &&
+            !uiState.isSaving
 
     ZaikoScreenScaffold(
         title = "HT 在庫調整",
@@ -331,62 +621,84 @@ fun HtAdjustmentScreen(
         ScrollForm(padding = padding) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = productCode.value,
-                onValueChange = { productCode.value = it },
+                value = uiState.productCode,
+                onValueChange = viewModel::onProductCodeChanged,
                 label = { Text("商品コード") },
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = location.value,
-                onValueChange = { location.value = it },
+                value = uiState.locationCode,
+                onValueChange = viewModel::onLocationCodeChanged,
                 label = { Text("ロケーション") },
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = currentQty.value,
-                onValueChange = { currentQty.value = it },
-                label = { Text("現在在庫数") },
+                value = uiState.adjustQuantity,
+                onValueChange = viewModel::onAdjustQuantityChanged,
+                label = { Text("調整数（増:+ / 減:-）") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = deltaQty.value,
-                onValueChange = { deltaQty.value = it },
-                label = { Text("調整数") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                value = uiState.reasonCode,
+                onValueChange = viewModel::onReasonCodeChanged,
+                label = { Text("理由コード") },
+                placeholder = { Text("DAMAGE / LOSS / CORRECT / DIFF / OTHER") },
                 singleLine = true,
+                enabled = !uiState.isSaving,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = reason.value,
-                onValueChange = { reason.value = it },
-                label = { Text("調整理由") },
-                singleLine = true,
+                value = uiState.note,
+                onValueChange = viewModel::onNoteChanged,
+                label = { Text("備考") },
+                enabled = !uiState.isSaving,
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "理由コード例: DAMAGE=破損 / LOSS=紛失 / CORRECT=誤登録訂正 / DIFF=棚卸差異 / OTHER=その他",
+                style = MaterialTheme.typography.bodySmall,
+            )
+
+            uiState.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = canSave,
-                onClick = onComplete,
+                onClick = viewModel::submit,
             ) {
-                Text("登録")
+                Text(
+                    text = if (uiState.isSaving) "登録中..." else "登録"
+                )
             }
         }
     }

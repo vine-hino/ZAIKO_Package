@@ -1,7 +1,5 @@
 package com.vine.connector_fake
 
-import com.vine.database.dao.InboundRecordDao
-import com.vine.database.entity.InboundRecordEntity
 import com.vine.connector_api.ConnectionType
 import com.vine.connector_api.ConnectorSpec
 import com.vine.connector_api.InboundRequest

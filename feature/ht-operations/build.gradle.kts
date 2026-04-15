@@ -51,4 +51,6 @@ dependencies {
     implementation(libs.androidx.material3)
 
     implementation(libs.androidx.hilt.navigation.compose)
+
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 }

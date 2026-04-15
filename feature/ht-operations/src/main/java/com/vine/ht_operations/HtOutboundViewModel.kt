@@ -2,8 +2,8 @@ package com.vine.ht_operations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vine.connector_api.InboundCommand
 import com.vine.connector_api.InventoryGateway
+import com.vine.connector_api.OutboundCommand
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,13 +11,23 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class HtOutboundUiState(
+    val productCode: String = "",
+    val locationCode: String = "",
+    val quantity: String = "",
+    val note: String = "",
+    val isSaving: Boolean = false,
+    val errorMessage: String? = null,
+    val completedMessage: String? = null,
+)
+
 @HiltViewModel
-class HtInboundViewModel @Inject constructor(
+class HtOutboundViewModel @Inject constructor(
     private val inventoryGateway: InventoryGateway,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HtInboundUiState())
-    val uiState: StateFlow<HtInboundUiState> = _uiState
+    private val _uiState = MutableStateFlow(HtOutboundUiState())
+    val uiState: StateFlow<HtOutboundUiState> = _uiState
 
     fun onProductCodeChanged(value: String) {
         _uiState.update { it.copy(productCode = value, errorMessage = null) }
@@ -58,17 +68,15 @@ class HtInboundViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
 
-            val result = inventoryGateway.registerInbound(
-                InboundCommand(
+            val result = inventoryGateway.registerOutbound(
+                OutboundCommand(
                     productCode = current.productCode,
-                    toWarehouseCode = DEFAULT_WAREHOUSE_CODE,
-                    toLocationCode = current.locationCode,
+                    fromWarehouseCode = DEFAULT_WAREHOUSE_CODE,
+                    fromLocationCode = current.locationCode,
                     quantity = quantityValue,
                     operatorCode = DEFAULT_OPERATOR_CODE,
                     deviceId = DEFAULT_DEVICE_ID,
                     note = current.note.ifBlank { null },
-                    externalDocNo = null,
-                    inboundPlanId = null,
                 ),
             )
 

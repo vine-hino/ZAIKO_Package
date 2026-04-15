@@ -2,22 +2,34 @@ package com.vine.ht_operations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vine.connector_api.InboundCommand
 import com.vine.connector_api.InventoryGateway
+import com.vine.connector_api.StocktakeCommand
+import com.vine.connector_api.StocktakeLineCommand
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class HtStocktakeUiState(
+    val productCode: String = "",
+    val locationCode: String = "",
+    val actualQuantity: String = "",
+    val note: String = "",
+    val isSaving: Boolean = false,
+    val errorMessage: String? = null,
+    val completedMessage: String? = null,
+)
+
 @HiltViewModel
-class HtInboundViewModel @Inject constructor(
+class HtStocktakeViewModel @Inject constructor(
     private val inventoryGateway: InventoryGateway,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HtInboundUiState())
-    val uiState: StateFlow<HtInboundUiState> = _uiState
+    private val _uiState = MutableStateFlow(HtStocktakeUiState())
+    val uiState: StateFlow<HtStocktakeUiState> = _uiState
 
     fun onProductCodeChanged(value: String) {
         _uiState.update { it.copy(productCode = value, errorMessage = null) }
@@ -27,8 +39,8 @@ class HtInboundViewModel @Inject constructor(
         _uiState.update { it.copy(locationCode = value, errorMessage = null) }
     }
 
-    fun onQuantityChanged(value: String) {
-        _uiState.update { it.copy(quantity = value, errorMessage = null) }
+    fun onActualQuantityChanged(value: String) {
+        _uiState.update { it.copy(actualQuantity = value, errorMessage = null) }
     }
 
     fun onNoteChanged(value: String) {
@@ -48,27 +60,31 @@ class HtInboundViewModel @Inject constructor(
             return
         }
 
-        val quantityValue: Long = current.quantity.toLongOrNull()
-            ?.takeIf { it > 0L }
+        val actualQuantityValue: Long = current.actualQuantity.toLongOrNull()
+            ?.takeIf { it >= 0L }
             ?: run {
-                _uiState.update { it.copy(errorMessage = "数量は1以上で入力してください") }
+                _uiState.update { it.copy(errorMessage = "実棚数は0以上で入力してください") }
                 return
             }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
 
-            val result = inventoryGateway.registerInbound(
-                InboundCommand(
-                    productCode = current.productCode,
-                    toWarehouseCode = DEFAULT_WAREHOUSE_CODE,
-                    toLocationCode = current.locationCode,
-                    quantity = quantityValue,
+            val result = inventoryGateway.saveStocktake(
+                StocktakeCommand(
+                    stocktakeDate = LocalDate.now().toString(),
                     operatorCode = DEFAULT_OPERATOR_CODE,
+                    warehouseCode = DEFAULT_WAREHOUSE_CODE,
                     deviceId = DEFAULT_DEVICE_ID,
                     note = current.note.ifBlank { null },
-                    externalDocNo = null,
-                    inboundPlanId = null,
+                    lines = listOf(
+                        StocktakeLineCommand(
+                            productCode = current.productCode,
+                            warehouseCode = DEFAULT_WAREHOUSE_CODE,
+                            locationCode = current.locationCode,
+                            actualQuantity = actualQuantityValue,
+                        ),
+                    ),
                 ),
             )
 
