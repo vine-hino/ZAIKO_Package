@@ -1,10 +1,17 @@
 package com.vine.ht_operations
 
+import android.content.Context
+import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vine.connector_api.InboundCommand
 import com.vine.connector_api.InventoryGateway
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +21,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class HtInboundViewModel @Inject constructor(
     private val inventoryGateway: InventoryGateway,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HtInboundUiState())
@@ -56,7 +64,13 @@ class HtInboundViewModel @Inject constructor(
             }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isSaving = true,
+                    errorMessage = null,
+                    exportMessage = null,
+                )
+            }
 
             val result = inventoryGateway.registerInbound(
                 InboundCommand(
@@ -83,6 +97,7 @@ class HtInboundViewModel @Inject constructor(
                                 append(ref)
                             }
                         },
+                        savedOperationUuid = result.operationUuid,
                     )
                 }
             } else {
@@ -96,8 +111,74 @@ class HtInboundViewModel @Inject constructor(
         }
     }
 
-    fun consumeCompleted() {
-        _uiState.update { it.copy(completedMessage = null) }
+    fun exportJson() {
+        val current = _uiState.value
+        val operationUuid = current.savedOperationUuid
+            ?: run {
+                _uiState.update { it.copy(errorMessage = "先に入庫を保存してください") }
+                return
+            }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isExporting = true,
+                    errorMessage = null,
+                    exportMessage = null,
+                )
+            }
+
+            val outputFile = createExportFile()
+
+            val result = inventoryGateway.exportInboundToJson(
+                operationUuid = operationUuid,
+                outputFilePath = outputFile.absolutePath,
+                sourceDeviceId = DEFAULT_DEVICE_ID,
+            )
+
+            if (result.accepted) {
+                _uiState.update {
+                    it.copy(
+                        isExporting = false,
+                        exportMessage = buildString {
+                            append(result.message)
+                            result.referenceId?.let { path ->
+                                append("\n保存先: ")
+                                append(path)
+                            }
+                        },
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isExporting = false,
+                        errorMessage = result.message,
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearCompletedState() {
+        _uiState.update {
+            it.copy(
+                completedMessage = null,
+                exportMessage = null,
+                savedOperationUuid = null,
+            )
+        }
+    }
+
+    private fun createExportFile(): File {
+        val baseDir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            ?: context.filesDir
+        val exportDir = File(baseDir, "exports").apply { mkdirs() }
+
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+            .format(Date())
+
+        return File(exportDir, "inbound_$timestamp.json")
     }
 
     companion object {

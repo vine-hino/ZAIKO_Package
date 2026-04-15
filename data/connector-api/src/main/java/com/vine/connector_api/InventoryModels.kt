@@ -1,5 +1,7 @@
 package com.vine.connector_api
 
+import com.vine.inventory_contract.ConfirmStocktakeCommand
+
 enum class OperationKind {
     INBOUND,
     OUTBOUND,
@@ -98,11 +100,6 @@ data class StocktakeCommand(
     val deviceId: String? = null,
     val note: String? = null,
     val lines: List<StocktakeLineCommand>,
-)
-
-data class ConfirmStocktakeCommand(
-    val operationUuid: String,
-    val operatorCode: String,
 )
 
 data class AdjustmentCommand(

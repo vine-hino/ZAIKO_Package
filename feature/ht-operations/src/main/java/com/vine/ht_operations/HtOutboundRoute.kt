@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -27,14 +27,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.vine.designsystem.component.ZaikoScreenScaffold
 
 @Composable
-fun HtInboundRoute(
+fun HtOutboundRoute(
     onBack: () -> Unit,
     onComplete: (String) -> Unit,
-    viewModel: HtInboundViewModel = hiltViewModel(),
+    viewModel: HtOutboundViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    HtInboundScreen(
+    HtOutboundScreen(
         uiState = uiState,
         onBack = onBack,
         onProductCodeChanged = viewModel::onProductCodeChanged,
@@ -44,7 +44,7 @@ fun HtInboundRoute(
         onSubmit = viewModel::submit,
         onExportJson = viewModel::exportJson,
         onFinish = {
-            val message = uiState.completedMessage ?: "入庫を登録しました"
+            val message = uiState.completedMessage ?: "出庫を登録しました"
             viewModel.clearCompletedState()
             onComplete(message)
         },
@@ -52,8 +52,8 @@ fun HtInboundRoute(
 }
 
 @Composable
-private fun HtInboundScreen(
-    uiState: HtInboundUiState,
+private fun HtOutboundScreen(
+    uiState: HtOutboundUiState,
     onBack: () -> Unit,
     onProductCodeChanged: (String) -> Unit,
     onLocationCodeChanged: (String) -> Unit,
@@ -64,7 +64,7 @@ private fun HtInboundScreen(
     onFinish: () -> Unit,
 ) {
     ZaikoScreenScaffold(
-        title = "HT 入庫登録",
+        title = "HT 出庫登録",
         onBack = onBack,
     ) { padding ->
         Column(
@@ -88,7 +88,7 @@ private fun HtInboundScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = uiState.locationCode,
                 onValueChange = onLocationCodeChanged,
-                label = { Text("入庫先ロケーション") },
+                label = { Text("出庫元ロケーション") },
                 singleLine = true,
                 enabled = !uiState.isSaving && !uiState.isExporting,
             )
