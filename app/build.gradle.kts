@@ -68,7 +68,6 @@ dependencies {
     implementation(project(":feature:ht-operations"))
 
     implementation(project(":data:connector-api"))
-    implementation(project(":data:connector-fake"))
     implementation(project(":data:connector-ftp"))
     implementation(project(":data:connector-db"))
     implementation(project(":data:connector-cloud"))

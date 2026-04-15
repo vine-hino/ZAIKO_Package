@@ -3,7 +3,6 @@ package com.vine.zaiko_package.di
 import android.content.Context
 import androidx.room.Room
 import com.vine.database.ZaikoDatabase
-import com.vine.database.dao.InboundRecordDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,12 +23,8 @@ object DatabaseModule {
             context,
             ZaikoDatabase::class.java,
             "zaiko.db",
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
-
-    @Provides
-    @Singleton
-    fun provideInboundRecordDao(
-        database: ZaikoDatabase,
-    ): InboundRecordDao = database.inboundRecordDao()
 }

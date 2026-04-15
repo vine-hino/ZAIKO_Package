@@ -2,7 +2,7 @@ package com.vine.ht_operations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vine.connector_api.InboundCommand
+import com.vine.connector_api.AdjustmentCommand
 import com.vine.connector_api.InventoryGateway
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -11,13 +11,24 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class HtAdjustmentUiState(
+    val productCode: String = "",
+    val locationCode: String = "",
+    val adjustQuantity: String = "",
+    val reasonCode: String = "",
+    val note: String = "",
+    val isSaving: Boolean = false,
+    val errorMessage: String? = null,
+    val completedMessage: String? = null,
+)
+
 @HiltViewModel
-class HtInboundViewModel @Inject constructor(
+class HtAdjustmentViewModel @Inject constructor(
     private val inventoryGateway: InventoryGateway,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HtInboundUiState())
-    val uiState: StateFlow<HtInboundUiState> = _uiState
+    private val _uiState = MutableStateFlow(HtAdjustmentUiState())
+    val uiState: StateFlow<HtAdjustmentUiState> = _uiState
 
     fun onProductCodeChanged(value: String) {
         _uiState.update { it.copy(productCode = value, errorMessage = null) }
@@ -27,8 +38,12 @@ class HtInboundViewModel @Inject constructor(
         _uiState.update { it.copy(locationCode = value, errorMessage = null) }
     }
 
-    fun onQuantityChanged(value: String) {
-        _uiState.update { it.copy(quantity = value, errorMessage = null) }
+    fun onAdjustQuantityChanged(value: String) {
+        _uiState.update { it.copy(adjustQuantity = value, errorMessage = null) }
+    }
+
+    fun onReasonCodeChanged(value: String) {
+        _uiState.update { it.copy(reasonCode = value.uppercase(), errorMessage = null) }
     }
 
     fun onNoteChanged(value: String) {
@@ -48,27 +63,36 @@ class HtInboundViewModel @Inject constructor(
             return
         }
 
-        val quantityValue: Long = current.quantity.toLongOrNull()
-            ?.takeIf { it > 0L }
+        if (current.reasonCode.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "理由コードを入力してください") }
+            return
+        }
+
+        val adjustQuantityValue: Long = current.adjustQuantity.toLongOrNull()
+            ?.takeIf { it != 0L }
             ?: run {
-                _uiState.update { it.copy(errorMessage = "数量は1以上で入力してください") }
+                _uiState.update { it.copy(errorMessage = "調整数は0以外で入力してください") }
                 return
             }
+
+        if (current.reasonCode == "OTHER" && current.note.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "理由がOTHERのときは備考を入力してください") }
+            return
+        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
 
-            val result = inventoryGateway.registerInbound(
-                InboundCommand(
+            val result = inventoryGateway.registerAdjustment(
+                AdjustmentCommand(
                     productCode = current.productCode,
-                    toWarehouseCode = DEFAULT_WAREHOUSE_CODE,
-                    toLocationCode = current.locationCode,
-                    quantity = quantityValue,
+                    warehouseCode = DEFAULT_WAREHOUSE_CODE,
+                    locationCode = current.locationCode,
+                    adjustQuantity = adjustQuantityValue,
+                    reasonCode = current.reasonCode,
                     operatorCode = DEFAULT_OPERATOR_CODE,
                     deviceId = DEFAULT_DEVICE_ID,
                     note = current.note.ifBlank { null },
-                    externalDocNo = null,
-                    inboundPlanId = null,
                 ),
             )
 
