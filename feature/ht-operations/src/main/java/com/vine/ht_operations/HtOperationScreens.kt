@@ -32,6 +32,7 @@ import androidx.compose.runtime.collectAsState
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.layout.Row
 
 @Composable
 fun HtStockListScreen(
@@ -206,98 +207,6 @@ private fun signedQuantity(quantity: Long): String {
 }
 
 @Composable
-fun HtInboundScreen(
-    onBack: () -> Unit,
-    onComplete: () -> Unit,
-    viewModel: HtInboundViewModel = hiltViewModel(),
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    LaunchedEffect(uiState.completedMessage) {
-        if (uiState.completedMessage != null) {
-            onComplete()
-            viewModel.consumeCompleted()
-        }
-    }
-
-    val canSave = uiState.productCode.isNotBlank() &&
-            uiState.locationCode.isNotBlank() &&
-            (uiState.quantity.toLongOrNull()?.let { it > 0L } == true) &&
-            !uiState.isSaving
-
-    ZaikoScreenScaffold(
-        title = "HT 入庫登録",
-        onBack = onBack,
-    ) { padding ->
-        ScrollForm(padding = padding) {
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = uiState.productCode,
-                onValueChange = viewModel::onProductCodeChanged,
-                label = { Text("商品コード") },
-                singleLine = true,
-                enabled = !uiState.isSaving,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = uiState.locationCode,
-                onValueChange = viewModel::onLocationCodeChanged,
-                label = { Text("入庫先ロケーション") },
-                singleLine = true,
-                enabled = !uiState.isSaving,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = uiState.quantity,
-                onValueChange = viewModel::onQuantityChanged,
-                label = { Text("数量") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                enabled = !uiState.isSaving,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = uiState.note,
-                onValueChange = viewModel::onNoteChanged,
-                label = { Text("備考") },
-                singleLine = true,
-                enabled = !uiState.isSaving,
-            )
-
-            uiState.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = message,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                enabled = canSave,
-                onClick = viewModel::submit,
-            ) {
-                Text(
-                    text = if (uiState.isSaving) "登録中..." else "登録"
-                )
-            }
-        }
-    }
-}
-
-@Composable
 fun HtOutboundScreen(
     onBack: () -> Unit,
     onComplete: () -> Unit,
@@ -308,7 +217,7 @@ fun HtOutboundScreen(
     LaunchedEffect(uiState.completedMessage) {
         if (uiState.completedMessage != null) {
             onComplete()
-            viewModel.consumeCompleted()
+            viewModel.clearCompletedState()
         }
     }
 
@@ -502,17 +411,11 @@ fun HtStocktakeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(uiState.completedMessage) {
-        if (uiState.completedMessage != null) {
-            onComplete()
-            viewModel.consumeCompleted()
-        }
-    }
-
     val canSave = uiState.productCode.isNotBlank() &&
             uiState.locationCode.isNotBlank() &&
             (uiState.actualQuantity.toLongOrNull()?.let { it >= 0L } == true) &&
-            !uiState.isSaving
+            !uiState.isSaving &&
+            !uiState.isExporting
 
     ZaikoScreenScaffold(
         title = "HT 棚卸入力",
@@ -525,7 +428,7 @@ fun HtStocktakeScreen(
                 onValueChange = viewModel::onProductCodeChanged,
                 label = { Text("商品コード") },
                 singleLine = true,
-                enabled = !uiState.isSaving,
+                enabled = !uiState.isSaving && !uiState.isExporting,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -536,7 +439,7 @@ fun HtStocktakeScreen(
                 onValueChange = viewModel::onLocationCodeChanged,
                 label = { Text("ロケーション") },
                 singleLine = true,
-                enabled = !uiState.isSaving,
+                enabled = !uiState.isSaving && !uiState.isExporting,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -548,7 +451,7 @@ fun HtStocktakeScreen(
                 label = { Text("実棚数") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
-                enabled = !uiState.isSaving,
+                enabled = !uiState.isSaving && !uiState.isExporting,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -558,13 +461,13 @@ fun HtStocktakeScreen(
                 value = uiState.note,
                 onValueChange = viewModel::onNoteChanged,
                 label = { Text("備考") },
-                enabled = !uiState.isSaving,
+                enabled = !uiState.isSaving && !uiState.isExporting,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "※ この画面では棚卸を保存します。在庫へ反映されるのは確定時です。",
+                text = "※ この画面では棚卸を保存します。在庫へ反映されるのはPC側で確定したときです。",
                 style = MaterialTheme.typography.bodySmall,
             )
 
@@ -577,16 +480,66 @@ fun HtStocktakeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            uiState.completedMessage?.let { message ->
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                enabled = canSave,
-                onClick = viewModel::submit,
-            ) {
-                Text(
-                    text = if (uiState.isSaving) "保存中..." else "保存"
-                )
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "保存完了",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(text = message)
+
+                        uiState.exportMessage?.let { exportMessage ->
+                            Text(
+                                text = exportMessage,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Button(
+                                onClick = viewModel::exportJson,
+                                enabled = !uiState.isExporting,
+                            ) {
+                                Text(
+                                    if (uiState.isExporting) "書き出し中..." else "JSON書き出し"
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    viewModel.clearCompletedState()
+                                    onComplete()
+                                },
+                                enabled = !uiState.isExporting,
+                            ) {
+                                Text("完了")
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (uiState.completedMessage == null) {
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = canSave,
+                    onClick = viewModel::submit,
+                ) {
+                    Text(
+                        text = if (uiState.isSaving) "保存中..." else "保存"
+                    )
+                }
             }
         }
     }

@@ -6,12 +6,16 @@ data class HtInboundUiState(
     val quantity: String = "",
     val note: String = "",
     val isSaving: Boolean = false,
+    val isExporting: Boolean = false,
     val errorMessage: String? = null,
     val completedMessage: String? = null,
+    val exportMessage: String? = null,
+    val savedOperationUuid: String? = null,
 ) {
     val canSubmit: Boolean
         get() = productCode.isNotBlank() &&
                 locationCode.isNotBlank() &&
-                quantity.toIntOrNull()?.let { it > 0 } == true &&
-                !isSaving
+                (quantity.toLongOrNull()?.let { it > 0L } == true) &&
+                !isSaving &&
+                !isExporting
 }

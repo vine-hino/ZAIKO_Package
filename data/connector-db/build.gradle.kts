@@ -35,4 +35,6 @@ dependencies {
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
+    implementation(project(":shared:inventory-contract"))
+    implementation("com.google.code.gson:gson:2.10.1")
 }

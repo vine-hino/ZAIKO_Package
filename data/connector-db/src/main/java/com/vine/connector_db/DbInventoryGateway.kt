@@ -3,7 +3,7 @@ package com.vine.connector_db
 import androidx.room.withTransaction
 import com.vine.connector_api.AdjustmentCommand
 import com.vine.connector_api.CancelOperationCommand
-import com.vine.connector_api.ConfirmStocktakeCommand
+import com.vine.inventory_contract.ConfirmStocktakeCommand
 import com.vine.connector_api.ConnectionType
 import com.vine.connector_api.InboundCommand
 import com.vine.connector_api.InventoryGateway
@@ -37,10 +37,18 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.first
+import com.vine.inventory_contract.GetStocktakeDetailsQuery
+import com.vine.inventory_contract.GetStocktakeSummariesQuery
+import com.vine.inventory_contract.StocktakeDetail
+import com.vine.inventory_contract.StocktakeSummary
+import java.io.File
 
 @Singleton
 class DbInventoryGateway @Inject constructor(
     private val database: ZaikoDatabase,
+    private val stocktakeJsonExporter: StocktakeJsonExporter,
+    private val inboundJsonExporter: InboundJsonExporter,
+    private val outboundJsonExporter: OutboundJsonExporter,
 ) : InventoryGateway {
 
     private val productDao get() = database.productDao()
@@ -54,6 +62,69 @@ class DbInventoryGateway @Inject constructor(
     private val syncQueueDao get() = database.syncQueueDao()
 
     override fun currentConnectionType(): ConnectionType = ConnectionType.DIRECT_DB
+
+    override suspend fun getStocktakeSummaries(
+        query: GetStocktakeSummariesQuery,
+    ): List<StocktakeSummary> {
+        val warehouseId = query.warehouseCode
+            ?.takeIf { it.isNotBlank() }
+            ?.let { warehouseDao.findWarehouseByCode(it)?.id }
+
+        val headers = stocktakeDao.findHeaders(
+            status = query.status?.takeIf { it.isNotBlank() },
+            warehouseId = warehouseId,
+            limit = query.limit,
+        )
+
+        return headers.map { header ->
+            val warehouse = header.warehouseId?.let { warehouseDao.findWarehouseById(it) }
+            val operator = warehouseDao.findOperatorById(header.enteredBy)
+            val lineCount = stocktakeDao.countDetailsByStocktakeId(header.id)
+
+            StocktakeSummary(
+                operationUuid = header.operationUuid,
+                stocktakeNo = header.stocktakeNo,
+                stocktakeDate = header.stocktakeDate,
+                warehouseCode = warehouse?.warehouseCode,
+                warehouseName = warehouse?.warehouseName,
+                status = header.status.name,
+                lineCount = lineCount,
+                enteredByName = operator?.operatorName,
+            )
+        }
+    }
+
+    override suspend fun getStocktakeDetails(
+        query: GetStocktakeDetailsQuery,
+    ): List<StocktakeDetail> {
+        val stocktake = stocktakeDao.findStocktakeByOperationUuid(query.operationUuid)
+            ?: return emptyList()
+
+        val details = stocktake.details.mapNotNull { detail ->
+            val product = productDao.findProductById(detail.productId) ?: return@mapNotNull null
+            val warehouse = warehouseDao.findWarehouseById(detail.warehouseId) ?: return@mapNotNull null
+            val location = warehouseDao.findLocationById(detail.locationId) ?: return@mapNotNull null
+
+            StocktakeDetail(
+                detailUuid = detail.detailUuid,
+                operationUuid = stocktake.header.operationUuid,
+                lineNo = detail.lineNo,
+                productCode = product.productCode,
+                productName = product.productName,
+                warehouseCode = warehouse.warehouseCode,
+                locationCode = location.locationCode,
+                bookQuantity = detail.bookQuantity,
+                actualQuantity = detail.actualQuantity,
+                diffQuantity = detail.diffQuantity,
+            )
+        }
+
+        return if (query.diffOnly) {
+            details.filter { it.diffQuantity != 0L }
+        } else {
+            details
+        }
+    }
 
     override suspend fun searchStock(query: StockQuery): List<StockItem> {
         val productCode = query.productCode?.takeIf { it.isNotBlank() }
@@ -854,6 +925,34 @@ class DbInventoryGateway @Inject constructor(
         return syncQueueDao.observeUnsyncedCount().first()
     }
 
+    override suspend fun exportStocktakeToJson(
+        operationUuid: String,
+        outputFilePath: String,
+        sourceDeviceId: String?,
+    ): SubmitResult {
+        return runCatching {
+            val outputFile = File(outputFilePath)
+            stocktakeJsonExporter.exportToFile(
+                operationUuid = operationUuid,
+                outputFile = outputFile,
+                sourceDeviceId = sourceDeviceId,
+            )
+
+            SubmitResult(
+                accepted = true,
+                message = "棚卸JSONを書き出しました",
+                referenceId = outputFile.absolutePath,
+                operationUuid = operationUuid,
+            )
+        }.getOrElse {
+            SubmitResult(
+                accepted = false,
+                message = it.message ?: "棚卸JSON書き出しに失敗しました",
+                operationUuid = operationUuid,
+            )
+        }
+    }
+
     private suspend fun requireProduct(productCode: String) =
         productDao.findProductByCode(productCode)
             ?: throw IllegalArgumentException("商品が見つかりません: $productCode")
@@ -898,5 +997,61 @@ class DbInventoryGateway @Inject constructor(
 
     private fun createReferenceNo(prefix: String, epochMillis: Long): String {
         return "$prefix-$epochMillis"
+    }
+
+    override suspend fun exportInboundToJson(
+        operationUuid: String,
+        outputFilePath: String,
+        sourceDeviceId: String?,
+    ): SubmitResult {
+        return runCatching {
+            val outputFile = File(outputFilePath)
+            inboundJsonExporter.exportToFile(
+                operationUuid = operationUuid,
+                outputFile = outputFile,
+                sourceDeviceId = sourceDeviceId,
+            )
+
+            SubmitResult(
+                accepted = true,
+                message = "入庫JSONを書き出しました",
+                referenceId = outputFile.absolutePath,
+                operationUuid = operationUuid,
+            )
+        }.getOrElse {
+            SubmitResult(
+                accepted = false,
+                message = it.message ?: "入庫JSON書き出しに失敗しました",
+                operationUuid = operationUuid,
+            )
+        }
+    }
+
+    override suspend fun exportOutboundToJson(
+        operationUuid: String,
+        outputFilePath: String,
+        sourceDeviceId: String?,
+    ): SubmitResult {
+        return runCatching {
+            val outputFile = java.io.File(outputFilePath)
+            outboundJsonExporter.exportToFile(
+                operationUuid = operationUuid,
+                outputFile = outputFile,
+                sourceDeviceId = sourceDeviceId,
+            )
+
+            SubmitResult(
+                accepted = true,
+                message = "出庫JSONを書き出しました",
+                referenceId = outputFile.absolutePath,
+                operationUuid = operationUuid,
+            )
+        }.getOrElse {
+            SubmitResult(
+                accepted = false,
+                message = it.message ?: "出庫JSON書き出しに失敗しました",
+                operationUuid = operationUuid,
+            )
+        }
     }
 }

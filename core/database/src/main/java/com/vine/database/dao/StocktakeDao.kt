@@ -97,4 +97,27 @@ interface StocktakeDao {
         """
     )
     suspend fun markDetailsReflected(stocktakeId: Long)
+
+    @Query(
+        """
+    SELECT * FROM stocktake_headers
+    WHERE (:status IS NULL OR status = :status)
+      AND (:warehouseId IS NULL OR warehouse_id = :warehouseId)
+    ORDER BY stocktake_date DESC, id DESC
+    LIMIT :limit
+    """
+    )
+    suspend fun findHeaders(
+        status: String?,
+        warehouseId: Long?,
+        limit: Int,
+    ): List<StocktakeHeaderEntity>
+
+    @Query(
+        """
+    SELECT COUNT(*) FROM stocktake_details
+    WHERE stocktake_id = :stocktakeId
+    """
+    )
+    suspend fun countDetailsByStocktakeId(stocktakeId: Long): Int
 }

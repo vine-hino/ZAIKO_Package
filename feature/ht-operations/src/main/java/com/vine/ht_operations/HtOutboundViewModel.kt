@@ -1,10 +1,17 @@
 package com.vine.ht_operations
 
+import android.content.Context
+import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vine.connector_api.InventoryGateway
 import com.vine.connector_api.OutboundCommand
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,13 +24,24 @@ data class HtOutboundUiState(
     val quantity: String = "",
     val note: String = "",
     val isSaving: Boolean = false,
+    val isExporting: Boolean = false,
     val errorMessage: String? = null,
     val completedMessage: String? = null,
-)
+    val exportMessage: String? = null,
+    val savedOperationUuid: String? = null,
+) {
+    val canSubmit: Boolean
+        get() = productCode.isNotBlank() &&
+                locationCode.isNotBlank() &&
+                (quantity.toLongOrNull()?.let { it > 0L } == true) &&
+                !isSaving &&
+                !isExporting
+}
 
 @HiltViewModel
 class HtOutboundViewModel @Inject constructor(
     private val inventoryGateway: InventoryGateway,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HtOutboundUiState())
@@ -66,7 +84,13 @@ class HtOutboundViewModel @Inject constructor(
             }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isSaving = true,
+                    errorMessage = null,
+                    exportMessage = null,
+                )
+            }
 
             val result = inventoryGateway.registerOutbound(
                 OutboundCommand(
@@ -91,6 +115,7 @@ class HtOutboundViewModel @Inject constructor(
                                 append(ref)
                             }
                         },
+                        savedOperationUuid = result.operationUuid,
                     )
                 }
             } else {
@@ -104,8 +129,74 @@ class HtOutboundViewModel @Inject constructor(
         }
     }
 
-    fun consumeCompleted() {
-        _uiState.update { it.copy(completedMessage = null) }
+    fun exportJson() {
+        val current = _uiState.value
+        val operationUuid = current.savedOperationUuid
+            ?: run {
+                _uiState.update { it.copy(errorMessage = "先に出庫を保存してください") }
+                return
+            }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isExporting = true,
+                    errorMessage = null,
+                    exportMessage = null,
+                )
+            }
+
+            val outputFile = createExportFile()
+
+            val result = inventoryGateway.exportOutboundToJson(
+                operationUuid = operationUuid,
+                outputFilePath = outputFile.absolutePath,
+                sourceDeviceId = DEFAULT_DEVICE_ID,
+            )
+
+            if (result.accepted) {
+                _uiState.update {
+                    it.copy(
+                        isExporting = false,
+                        exportMessage = buildString {
+                            append(result.message)
+                            result.referenceId?.let { path ->
+                                append("\n保存先: ")
+                                append(path)
+                            }
+                        },
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isExporting = false,
+                        errorMessage = result.message,
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearCompletedState() {
+        _uiState.update {
+            it.copy(
+                completedMessage = null,
+                exportMessage = null,
+                savedOperationUuid = null,
+            )
+        }
+    }
+
+    private fun createExportFile(): File {
+        val baseDir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            ?: context.filesDir
+        val exportDir = File(baseDir, "exports").apply { mkdirs() }
+
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+            .format(Date())
+
+        return File(exportDir, "outbound_$timestamp.json")
     }
 
     companion object {
