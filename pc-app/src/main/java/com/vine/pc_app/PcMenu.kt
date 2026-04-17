@@ -4,7 +4,7 @@ enum class PcMenu(
     val title: String,
     val section: String,
 ) {
-    DASHBOARD("ダッシュボード", "HOME"),
+    DASHBOARD("ホーム", "HOME"),
     STOCKTAKE("棚卸管理", "OPERATIONS"),
     INBOUND("入庫管理", "OPERATIONS"),
     OUTBOUND("出庫管理", "OPERATIONS"),

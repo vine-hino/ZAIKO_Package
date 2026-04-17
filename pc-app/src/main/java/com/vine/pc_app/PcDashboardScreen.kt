@@ -1,50 +1,84 @@
 package com.vine.pc_app
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.vine.inventory_contract.GetStocktakeSummariesQuery
-import com.vine.inventory_contract.StocktakeSummary
-import com.vine.pc_app.PcDependencies
+
+private val HomeHeroBg = Color(0xFFF3F7FF)
+private val HomeStatBlue = Color(0xFFF0F4FF)
+private val HomeStatGreen = Color(0xFFF1FBF6)
+private val HomeStatOrange = Color(0xFFFFF8EC)
+private val HomeStatPurple = Color(0xFFF7F2FF)
+
+private val HomeActionInbound = Color(0xFFEFF6FF)
+private val HomeActionOutbound = Color(0xFFFDF2F8)
+private val HomeActionStocktake = Color(0xFFF0FDF4)
+private val HomeActionMove = Color(0xFFFFFBEB)
+private val HomeActionAdjustment = Color(0xFFFFF7ED)
+private val HomeActionStock = Color(0xFFF5F3FF)
+private val HomeActionMaster = Color(0xFFF8FAFC)
+private val HomeActionSync = Color(0xFFECFEFF)
+private val HomeActionSettings = Color(0xFFF4F4F5)
 
 @Composable
-fun PcDashboardScreen() {
-    val repository = PcDependencies.stocktakeRepository
-    val draftStocktakes = repository.getSummaries(
-        GetStocktakeSummariesQuery(
-            status = "DRAFT",
-            limit = 5,
-        ),
-    )
-
-    val confirmedStocktakes = repository.getSummaries(
-        GetStocktakeSummariesQuery(
-            status = "CONFIRMED",
-            limit = 5,
-        ),
-    )
-
+fun PcDashboardScreen(
+    onOpenInbound: () -> Unit,
+    onOpenOutbound: () -> Unit,
+    onOpenStocktake: () -> Unit,
+    onOpenMove: () -> Unit,
+    onOpenAdjustment: () -> Unit,
+    onOpenStock: () -> Unit,
+    onOpenMaster: () -> Unit,
+    onOpenSync: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = "ダッシュボード",
-            style = MaterialTheme.typography.headlineSmall,
-        )
+//        Card(
+//            shape = RoundedCornerShape(22.dp),
+//            colors = CardDefaults.cardColors(containerColor = HomeHeroBg),
+//        ) {
+//            Column(
+//                modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp),
+//                verticalArrangement = Arrangement.spacedBy(6.dp),
+//            ) {
+//                Text(
+//                    text = "ホーム",
+//                    style = MaterialTheme.typography.headlineMedium,
+//                    fontWeight = FontWeight.Bold,
+//                )
+//                Text(
+//                    text = "上段で状況を把握し、下段のボタンから必要な業務画面へ移動します。",
+//                    style = MaterialTheme.typography.bodyLarge,
+//                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+//                )
+//            }
+//        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -52,47 +86,149 @@ fun PcDashboardScreen() {
         ) {
             DashboardStatCard(
                 modifier = Modifier.weight(1f),
-                title = "未確定棚卸",
-                value = draftStocktakes.size.toString(),
-                sub = "PCで確認・確定待ち",
+                title = "本日入庫",
+                value = "12件",
+                subText = "最新更新 10:42",
+                backgroundColor = HomeStatBlue,
             )
             DashboardStatCard(
                 modifier = Modifier.weight(1f),
-                title = "確定済棚卸",
-                value = confirmedStocktakes.size.toString(),
-                sub = "直近データ件数",
+                title = "本日出庫",
+                value = "8件",
+                subText = "最新更新 10:20",
+                backgroundColor = HomeStatGreen,
             )
             DashboardStatCard(
                 modifier = Modifier.weight(1f),
-                title = "同期方式",
-                value = "JSON",
-                sub = "HT → PC 取込",
+                title = "棚卸差異",
+                value = "3件",
+                subText = "確認待ちあり",
+                backgroundColor = HomeStatOrange,
             )
             DashboardStatCard(
                 modifier = Modifier.weight(1f),
-                title = "DB",
-                value = "PostgreSQL",
-                sub = "ローカル正本",
+                title = "同期状態",
+                value = "正常",
+                subText = "最終同期 10:30",
+                backgroundColor = HomeStatPurple,
             )
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            DashboardListCard(
-                modifier = Modifier.weight(1f),
-                title = "未確定棚卸",
-                emptyText = "未確定棚卸はありません",
-                items = draftStocktakes,
+            Text(
+                text = "業務メニュー",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
             )
 
-            DashboardListCard(
-                modifier = Modifier.weight(1f),
-                title = "確定済棚卸",
-                emptyText = "確定済棚卸はありません",
-                items = confirmedStocktakes,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                DashboardActionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "入庫",
+                    description = "入庫一覧・検索・確認",
+                    backgroundColor = HomeActionInbound,
+                    onClick = onOpenInbound,
+                )
+                DashboardActionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "出庫",
+                    description = "出庫一覧・検索・確認",
+                    backgroundColor = HomeActionOutbound,
+                    onClick = onOpenOutbound,
+                )
+                DashboardActionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "棚卸",
+                    description = "棚卸登録・差異確認",
+                    backgroundColor = HomeActionStocktake,
+                    onClick = onOpenStocktake,
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                DashboardActionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "移動",
+                    description = "ロケーション・倉庫間移動",
+                    backgroundColor = HomeActionMove,
+                    onClick = onOpenMove,
+                )
+                DashboardActionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "在庫調整",
+                    description = "差異や補正の登録",
+                    backgroundColor = HomeActionAdjustment,
+                    onClick = onOpenAdjustment,
+                )
+                DashboardActionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "在庫照会",
+                    description = "商品・倉庫・履歴照会",
+                    backgroundColor = HomeActionStock,
+                    onClick = onOpenStock,
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                DashboardActionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "マスタ管理",
+                    description = "商品・倉庫・ロケーション管理",
+                    backgroundColor = HomeActionMaster,
+                    onClick = onOpenMaster,
+                )
+                DashboardActionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "同期管理",
+                    description = "JSON取込・再同期・履歴確認",
+                    backgroundColor = HomeActionSync,
+                    onClick = onOpenSync,
+                )
+                DashboardActionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "設定",
+                    description = "DB・同期・端末設定",
+                    backgroundColor = HomeActionSettings,
+                    onClick = onOpenSettings,
+                )
+            }
+        }
+
+        Card(
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = "運用メモ",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = "・入庫画面は利用可能",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = "・次はホーム導線を基準に出庫・棚卸へ横展開",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
         }
     }
 }
@@ -102,75 +238,74 @@ private fun DashboardStatCard(
     modifier: Modifier = Modifier,
     title: String,
     value: String,
-    sub: String,
+    subText: String,
+    backgroundColor: Color,
 ) {
-    Card(modifier = modifier) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+    ) {
         Column(
-            modifier = Modifier.padding(18.dp),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
             )
             Text(
-                text = sub,
+                text = subText,
                 style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
 
 @Composable
-private fun DashboardListCard(
+private fun DashboardActionCard(
     modifier: Modifier = Modifier,
     title: String,
-    emptyText: String,
-    items: List<StocktakeSummary>,
+    description: String,
+    backgroundColor: Color,
+    onClick: () -> Unit,
 ) {
-    Card(modifier = modifier) {
+    Card(
+        modifier = modifier.clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+    ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(backgroundColor)
+                .padding(horizontal = 18.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
             )
-
-            if (items.isEmpty()) {
-                Text(
-                    text = emptyText,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(items, key = { it.operationUuid }) { row ->
-                        Card {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Text(
-                                    text = row.stocktakeNo,
-                                    style = MaterialTheme.typography.titleSmall,
-                                )
-                                Text("棚卸日: ${row.stocktakeDate}")
-                                Text("倉庫: ${row.warehouseName ?: row.warehouseCode.orEmpty()}")
-                                Text("状態: ${row.status}")
-                                Text("明細件数: ${row.lineCount}")
-                            }
-                        }
-                    }
-                }
-            }
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "開く →",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
     }
 }
