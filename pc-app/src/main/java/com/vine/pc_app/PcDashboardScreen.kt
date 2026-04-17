@@ -18,13 +18,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-private val HomeHeroBg = Color(0xFFF3F7FF)
 private val HomeStatBlue = Color(0xFFF0F4FF)
 private val HomeStatGreen = Color(0xFFF1FBF6)
 private val HomeStatOrange = Color(0xFFFFF8EC)
@@ -59,27 +58,6 @@ fun PcDashboardScreen(
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-//        Card(
-//            shape = RoundedCornerShape(22.dp),
-//            colors = CardDefaults.cardColors(containerColor = HomeHeroBg),
-//        ) {
-//            Column(
-//                modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp),
-//                verticalArrangement = Arrangement.spacedBy(6.dp),
-//            ) {
-//                Text(
-//                    text = "ホーム",
-//                    style = MaterialTheme.typography.headlineMedium,
-//                    fontWeight = FontWeight.Bold,
-//                )
-//                Text(
-//                    text = "上段で状況を把握し、下段のボタンから必要な業務画面へ移動します。",
-//                    style = MaterialTheme.typography.bodyLarge,
-//                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-//                )
-//            }
-//        }
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -114,120 +92,109 @@ fun PcDashboardScreen(
             )
         }
 
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = "業務メニュー",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                DashboardActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "入庫",
-                    description = "入庫一覧・検索・確認",
-                    backgroundColor = HomeActionInbound,
-                    onClick = onOpenInbound,
-                )
-                DashboardActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "出庫",
-                    description = "出庫一覧・検索・確認",
-                    backgroundColor = HomeActionOutbound,
-                    onClick = onOpenOutbound,
-                )
-                DashboardActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "棚卸",
-                    description = "棚卸登録・差異確認",
-                    backgroundColor = HomeActionStocktake,
-                    onClick = onOpenStocktake,
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                DashboardActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "移動",
-                    description = "ロケーション・倉庫間移動",
-                    backgroundColor = HomeActionMove,
-                    onClick = onOpenMove,
-                )
-                DashboardActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "在庫調整",
-                    description = "差異や補正の登録",
-                    backgroundColor = HomeActionAdjustment,
-                    onClick = onOpenAdjustment,
-                )
-                DashboardActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "在庫照会",
-                    description = "商品・倉庫・履歴照会",
-                    backgroundColor = HomeActionStock,
-                    onClick = onOpenStock,
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                DashboardActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "マスタ管理",
-                    description = "商品・倉庫・ロケーション管理",
-                    backgroundColor = HomeActionMaster,
-                    onClick = onOpenMaster,
-                )
-                DashboardActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "同期管理",
-                    description = "JSON取込・再同期・履歴確認",
-                    backgroundColor = HomeActionSync,
-                    onClick = onOpenSync,
-                )
-                DashboardActionCard(
-                    modifier = Modifier.weight(1f),
-                    title = "設定",
-                    description = "DB・同期・端末設定",
-                    backgroundColor = HomeActionSettings,
-                    onClick = onOpenSettings,
-                )
-            }
-        }
-
         Card(
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(22.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = MaterialTheme.colorScheme.surface
             ),
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Text(
-                    text = "運用メモ",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "業務メニュー",
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "・入庫画面は利用可能",
+                    text = "各業務画面へ移動します",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
-                    text = "・次はホーム導線を基準に出庫・棚卸へ横展開",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    DashboardActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "入庫",
+                        description = "入庫一覧・検索・確認",
+                        accentColor = HomeActionInbound,
+                        onClick = onOpenInbound,
+                    )
+                    DashboardActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "出庫",
+                        description = "出庫一覧・検索・確認",
+                        accentColor = HomeActionOutbound,
+                        onClick = onOpenOutbound,
+                    )
+                    DashboardActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "棚卸",
+                        description = "棚卸登録・差異確認",
+                        accentColor = HomeActionStocktake,
+                        onClick = onOpenStocktake,
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    DashboardActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "移動",
+                        description = "ロケーション・倉庫間移動",
+                        accentColor = HomeActionMove,
+                        onClick = onOpenMove,
+                    )
+                    DashboardActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "在庫調整",
+                        description = "差異や補正の登録",
+                        accentColor = HomeActionAdjustment,
+                        onClick = onOpenAdjustment,
+                    )
+                    DashboardActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "在庫照会",
+                        description = "商品・倉庫・履歴照会",
+                        accentColor = HomeActionStock,
+                        onClick = onOpenStock,
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    DashboardActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "マスタ管理",
+                        description = "商品・倉庫・ロケーション管理",
+                        accentColor = HomeActionMaster,
+                        onClick = onOpenMaster,
+                    )
+                    DashboardActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "同期管理",
+                        description = "JSON取込・再同期・履歴確認",
+                        accentColor = HomeActionSync,
+                        onClick = onOpenSync,
+                    )
+                    DashboardActionCard(
+                        modifier = Modifier.weight(1f),
+                        title = "設定",
+                        description = "DB・同期・端末設定",
+                        accentColor = HomeActionSettings,
+                        onClick = onOpenSettings,
+                    )
+                }
             }
         }
     }
@@ -274,37 +241,53 @@ private fun DashboardActionCard(
     modifier: Modifier = Modifier,
     title: String,
     description: String,
-    backgroundColor: Color,
+    accentColor: Color,
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = modifier.clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        modifier = modifier
+            .height(170.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = accentColor
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp
+        ),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(backgroundColor)
-                .padding(horizontal = 18.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.70f),
+                        shape = RoundedCornerShape(99.dp)
+                    )
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "業務",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
+
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "開く →",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold,
             )
         }
     }

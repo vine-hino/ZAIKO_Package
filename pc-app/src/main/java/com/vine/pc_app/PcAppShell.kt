@@ -59,7 +59,7 @@ fun PcAppShell() {
                         onOpenSettings = { selectedMenu.value = PcMenu.SETTINGS },
                     )
 
-                    PcMenu.STOCKTAKE -> StocktakeConfirmScreen()
+                    PcMenu.STOCKTAKE -> PcStocktakeManagementScreen()
 
                     PcMenu.INBOUND -> PcInboundManagementScreen()
 
@@ -75,10 +75,7 @@ fun PcAppShell() {
                         description = "将来は調整理由付きで手動補正や差異調整を行います。",
                     )
 
-                    PcMenu.STOCK -> PcPlaceholderScreen(
-                        title = "在庫照会",
-                        description = "将来は商品別、ロケーション別、倉庫別に在庫・履歴を照会します。",
-                    )
+                    PcMenu.STOCK -> PcStockReferenceScreen()
 
                     PcMenu.MASTER -> PcPlaceholderScreen(
                         title = "マスタ管理",
