@@ -24,4 +24,5 @@ dependencies {
     implementation("io.ktor:ktor-server-websockets:$ktorVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
+    implementation("org.postgresql:postgresql:42.7.10")
 }

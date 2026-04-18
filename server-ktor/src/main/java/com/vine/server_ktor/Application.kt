@@ -1,8 +1,10 @@
 package com.vine.server_ktor
 
+import com.vine.server_ktor.persistence.ServerPgConfig
+import com.vine.server_ktor.persistence.ServerPostgresDataSourceFactory
 import com.vine.server_ktor.realtime.InventoryBroadcaster
-import com.vine.server_ktor.repository.InMemoryStockMovementRepository
-import com.vine.server_ktor.repository.InMemoryStocktakeDraftRepository
+import com.vine.server_ktor.repository.ServerPostgresStockMovementRepository
+import com.vine.server_ktor.repository.ServerPostgresStocktakeDraftRepository
 import com.vine.server_ktor.routes.inventoryRoutes
 import com.vine.server_ktor.routes.stocktakeRoutes
 import com.vine.server_ktor.service.InventoryService
@@ -35,14 +37,24 @@ fun Application.module() {
 
     install(WebSockets)
 
-    val movementRepository = InMemoryStockMovementRepository()
+    val pgConfig = ServerPgConfig.from(environment.config)
+    val dataSource = ServerPostgresDataSourceFactory.create(pgConfig)
+
+    val movementRepository = ServerPostgresStockMovementRepository(dataSource).apply {
+        bootstrap()
+    }
+
+    val stocktakeRepository = ServerPostgresStocktakeDraftRepository(dataSource).apply {
+        bootstrap()
+    }
+
     val broadcaster = InventoryBroadcaster(jsonConfig)
+
     val inventoryService = InventoryService(
         repository = movementRepository,
         broadcaster = broadcaster,
     )
 
-    val stocktakeRepository = InMemoryStocktakeDraftRepository()
     val stocktakeService = StocktakeService(
         stocktakeRepository = stocktakeRepository,
         movementRepository = movementRepository,
