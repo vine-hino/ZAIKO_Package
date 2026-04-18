@@ -2,7 +2,6 @@ package com.vine.pc_app
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +19,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,7 +27,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.vine.inventory_contract.StockBalanceDto
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 
 data class StockReferenceRowModel(
     val productCode: String,
@@ -47,44 +51,47 @@ data class StockReferenceSearchCondition(
 
 @Composable
 fun PcStockReferenceScreen() {
-    val allRows = remember {
-        listOf(
-            StockReferenceRowModel(
-                productCode = "P-001",
-                productName = "検品用ラベル",
-                barcode = "4901234567890",
-                warehouseName = "東京倉庫",
-                locationName = "A-01-01",
-                quantity = 120,
-                updatedAt = LocalDateTime.now().minusMinutes(25)
-            ),
-            StockReferenceRowModel(
-                productCode = "P-002",
-                productName = "梱包箱M",
-                barcode = "4909999999999",
-                warehouseName = "大阪倉庫",
-                locationName = "B-02-03",
-                quantity = 48,
-                updatedAt = LocalDateTime.now().minusHours(2)
-            ),
-            StockReferenceRowModel(
-                productCode = "P-003",
-                productName = "作業用手袋",
-                barcode = "4901111111111",
-                warehouseName = "東京倉庫",
-                locationName = "A-02-04",
-                quantity = 8,
-                updatedAt = LocalDateTime.now().minusHours(5)
-            )
-        )
+    var allRows by remember { mutableStateOf<List<StockReferenceRowModel>>(emptyList()) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+
+    suspend fun reload() {
+        runCatching {
+            PcDependencies.stockBalanceClient
+                .getBalances()
+                .items
+                .map { it.toRowModel() }
+        }.onSuccess { rows ->
+            allRows = rows
+            loadError = null
+        }.onFailure { e ->
+            loadError = e.message ?: "在庫照会の取得に失敗しました"
+        }
     }
 
-    StockReferenceScreen(allRows = allRows)
+    LaunchedEffect(Unit) {
+        reload()
+
+        launch {
+            runCatching {
+                PcDependencies.inventoryRealtimeClient.connect {
+                    reload()
+                }
+            }
+        }
+    }
+
+    StockReferenceScreen(
+        allRows = allRows,
+        loadError = loadError,
+        onReload = { kotlinx.coroutines.runBlocking { reload() } },
+    )
 }
 
 @Composable
 fun StockReferenceScreen(
     allRows: List<StockReferenceRowModel>,
+    loadError: String?,
+    onReload: () -> Unit,
 ) {
     var draftCondition by remember {
         mutableStateOf(StockReferenceSearchCondition())
@@ -135,12 +142,20 @@ fun StockReferenceScreen(
                 description = "商品、倉庫、ロケーション単位で現在在庫を照会する画面です。",
                 totalText = "該当 $totalCount 件 / 在庫総数 ${operationQuantityFormatter.format(totalQuantity)}",
                 actionText = "再読込",
-                onAction = {
-                    // ここは後で repository 再取得処理に置き換え
-                }
+                onAction = onReload,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            loadError?.let { message ->
+                OperationSearchCard {
+                    Text(
+                        text = message,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             OperationSearchCard {
                 Row(
@@ -153,7 +168,7 @@ fun StockReferenceScreen(
                         onValueChange = { draftCondition = draftCondition.copy(keyword = it) },
                         modifier = Modifier.weight(1.6f),
                         label = { Text("商品キーワード") },
-                        placeholder = { Text("商品コード / 商品名 / バーコード") },
+                        placeholder = { Text("商品コード / 商品名") },
                         singleLine = true
                     )
 
@@ -327,4 +342,24 @@ private fun filterStockRows(
                 .thenBy { it.locationName }
         )
         .toList()
+}
+
+private fun StockBalanceDto.toRowModel(): StockReferenceRowModel {
+    return StockReferenceRowModel(
+        productCode = productCode,
+        productName = productName,
+        barcode = null,
+        warehouseName = warehouseCode,
+        locationName = locationCode,
+        quantity = quantity.toInt(),
+        updatedAt = parseUpdatedAt(updatedAt),
+    )
+}
+
+private fun parseUpdatedAt(value: String): LocalDateTime {
+    return runCatching {
+        OffsetDateTime.parse(value).toLocalDateTime()
+    }.getOrElse {
+        LocalDateTime.now()
+    }
 }

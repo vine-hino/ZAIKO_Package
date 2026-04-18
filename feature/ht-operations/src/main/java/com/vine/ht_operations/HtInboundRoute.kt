@@ -42,7 +42,6 @@ fun HtInboundRoute(
         onQuantityChanged = viewModel::onQuantityChanged,
         onNoteChanged = viewModel::onNoteChanged,
         onSubmit = viewModel::submit,
-        onExportJson = viewModel::exportJson,
         onFinish = {
             val message = uiState.completedMessage ?: "入庫を登録しました"
             viewModel.clearCompletedState()
@@ -60,7 +59,6 @@ private fun HtInboundScreen(
     onQuantityChanged: (String) -> Unit,
     onNoteChanged: (String) -> Unit,
     onSubmit: () -> Unit,
-    onExportJson: () -> Unit,
     onFinish: () -> Unit,
 ) {
     ZaikoScreenScaffold(
@@ -131,28 +129,12 @@ private fun HtInboundScreen(
                         )
                         Text(text = message)
 
-                        uiState.exportMessage?.let { exportMessage ->
-                            Text(
-                                text = exportMessage,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             Button(
-                                onClick = onExportJson,
-                                enabled = !uiState.isExporting,
-                            ) {
-                                Text(
-                                    if (uiState.isExporting) "書き出し中..." else "JSON書き出し"
-                                )
-                            }
-
-                            Button(
                                 onClick = onFinish,
-                                enabled = !uiState.isExporting,
+                                enabled = !uiState.isSaving,
                             ) {
                                 Text("完了")
                             }

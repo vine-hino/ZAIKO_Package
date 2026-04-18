@@ -1,0 +1,108 @@
+package com.vine.connector_db
+
+import com.vine.connector_api.ConnectionType
+import com.vine.connector_api.InboundCommand
+import com.vine.connector_api.InventoryGateway
+import com.vine.connector_api.OutboundCommand
+import com.vine.connector_api.StocktakeCommand
+import com.vine.connector_api.SubmitResult
+import com.vine.database.ZaikoDatabase
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class HybridInventoryGateway @Inject constructor(
+    private val localGateway: DbInventoryGateway,
+    private val inboundServerClient: InboundServerClient,
+    private val outboundServerClient: OutboundServerClient,
+    private val stocktakeServerClient: StocktakeServerClient,
+    private val database: ZaikoDatabase,
+) : InventoryGateway by localGateway {
+
+    override fun currentConnectionType(): ConnectionType = ConnectionType.CLOUD
+
+    override suspend fun registerInbound(command: InboundCommand): SubmitResult {
+        val productName = database.productDao()
+            .findProductByCode(command.productCode)
+            ?.productName
+            ?: command.productCode
+
+        return inboundServerClient.registerInbound(
+            productCode = command.productCode,
+            productName = productName,
+            warehouseCode = command.toWarehouseCode,
+            locationCode = command.toLocationCode,
+            quantity = command.quantity,
+            operatorCode = command.operatorCode,
+            note = command.note,
+        )
+    }
+
+    override suspend fun registerOutbound(command: OutboundCommand): SubmitResult {
+        val productName = database.productDao()
+            .findProductByCode(command.productCode)
+            ?.productName
+            ?: command.productCode
+
+        return outboundServerClient.registerOutbound(
+            productCode = command.productCode,
+            productName = productName,
+            warehouseCode = command.fromWarehouseCode,
+            locationCode = command.fromLocationCode,
+            quantity = command.quantity,
+            operatorCode = command.operatorCode,
+            note = command.note,
+        )
+    }
+
+    override suspend fun saveStocktake(command: StocktakeCommand): SubmitResult {
+        val line = command.lines.firstOrNull()
+            ?: return SubmitResult(
+                accepted = false,
+                message = "棚卸明細がありません",
+            )
+
+        val productName = database.productDao()
+            .findProductByCode(line.productCode)
+            ?.productName
+            ?: line.productCode
+
+        return stocktakeServerClient.saveDraft(
+            command = command,
+            productName = productName,
+        )
+    }
+
+    override suspend fun exportInboundToJson(
+        operationUuid: String,
+        outputFilePath: String,
+        sourceDeviceId: String?,
+    ): SubmitResult {
+        return SubmitResult(
+            accepted = false,
+            message = "サーバー連携モードでは JSON 書き出しを使用しません",
+        )
+    }
+
+    override suspend fun exportOutboundToJson(
+        operationUuid: String,
+        outputFilePath: String,
+        sourceDeviceId: String?,
+    ): SubmitResult {
+        return SubmitResult(
+            accepted = false,
+            message = "サーバー連携モードでは JSON 書き出しを使用しません",
+        )
+    }
+
+    override suspend fun exportStocktakeToJson(
+        operationUuid: String,
+        outputFilePath: String,
+        sourceDeviceId: String?,
+    ): SubmitResult {
+        return SubmitResult(
+            accepted = false,
+            message = "サーバー連携モードでは JSON 書き出しを使用しません",
+        )
+    }
+}

@@ -2,15 +2,16 @@ package com.vine.server_ktor
 
 import com.vine.server_ktor.realtime.InventoryBroadcaster
 import com.vine.server_ktor.repository.InMemoryStockMovementRepository
+import com.vine.server_ktor.repository.InMemoryStocktakeDraftRepository
 import com.vine.server_ktor.routes.inventoryRoutes
+import com.vine.server_ktor.routes.stocktakeRoutes
 import com.vine.server_ktor.service.InventoryService
+import com.vine.server_ktor.service.StocktakeService
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.application.install
-import io.ktor.server.engine.ApplicationEngine
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
+import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
@@ -18,22 +19,11 @@ import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import kotlinx.serialization.json.Json
 
-class InventoryHttpServer {
-    fun start(
-        host: String = "0.0.0.0",
-        port: Int = 8080
-    ): ApplicationEngine {
-        return embeddedServer(
-            factory = Netty,
-            host = host,
-            port = port
-        ) {
-            inventoryHttpModule()
-        }.start(wait = false)
-    }
+fun main(args: Array<String>) {
+    EngineMain.main(args)
 }
 
-fun Application.inventoryHttpModule() {
+fun Application.module() {
     val jsonConfig = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
@@ -45,11 +35,17 @@ fun Application.inventoryHttpModule() {
 
     install(WebSockets)
 
-    val repository = InMemoryStockMovementRepository()
+    val movementRepository = InMemoryStockMovementRepository()
     val broadcaster = InventoryBroadcaster(jsonConfig)
-    val service = InventoryService(
-        repository = repository,
+    val inventoryService = InventoryService(
+        repository = movementRepository,
         broadcaster = broadcaster,
+    )
+
+    val stocktakeRepository = InMemoryStocktakeDraftRepository()
+    val stocktakeService = StocktakeService(
+        stocktakeRepository = stocktakeRepository,
+        movementRepository = movementRepository,
     )
 
     routing {
@@ -57,6 +53,7 @@ fun Application.inventoryHttpModule() {
             call.respond(mapOf("status" to "ok"))
         }
 
-        inventoryRoutes(service)
+        inventoryRoutes(inventoryService)
+        stocktakeRoutes(stocktakeService)
     }
 }

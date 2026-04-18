@@ -11,6 +11,6 @@ import dagger.hilt.components.SingletonComponent
 abstract class DbConnectorModule {
     @Binds
     abstract fun bindInventoryGateway(
-        impl: DbInventoryGateway,
+        impl: HybridInventoryGateway,
     ): InventoryGateway
 }

@@ -1,5 +1,8 @@
 package com.vine.inventory_contract
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class OutboundTransferPayload(
     val schemaVersion: Int = 1,
     val batchId: String,
@@ -10,6 +13,7 @@ data class OutboundTransferPayload(
     val details: List<OutboundTransferDetail>,
 )
 
+@Serializable
 data class OutboundTransferHeader(
     val operationUuid: String,
     val outboundNo: String,
@@ -21,6 +25,7 @@ data class OutboundTransferHeader(
     val note: String? = null,
 )
 
+@Serializable
 data class OutboundTransferDetail(
     val detailUuid: String,
     val operationUuid: String,

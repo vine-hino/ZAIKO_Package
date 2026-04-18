@@ -13,13 +13,20 @@ dependencies {
     implementation(compose.runtime)
     implementation(compose.foundation)
     implementation(compose.ui)
+
     implementation(project(":shared:inventory-contract"))
     implementation(project(":pc-data-postgres"))
+
+    implementation("io.ktor:ktor-client-core:2.3.9")
+    implementation("io.ktor:ktor-client-cio:2.3.9")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.9")
+    implementation("io.ktor:ktor-client-websockets:2.3.9")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.9")
 }
 
 compose.desktop {
     application {
-        mainClass = "com.vine.pcapp.MainKt"
+        mainClass = "com.vine.pc_app.MainKt"
 
         nativeDistributions {
             targetFormats(

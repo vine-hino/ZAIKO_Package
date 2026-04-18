@@ -1,67 +1,92 @@
 package com.vine.pc_app
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import java.time.LocalDateTime
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.vine.inventory_contract.StockMovementDto
+import com.vine.inventory_contract.StockOperation
+import kotlinx.coroutines.launch
+import java.time.OffsetDateTime
 
 @Composable
 fun PcInboundManagementScreen() {
-    // まずは UI 統合を優先して仮データで表示
-    // repository 接続はこの listOf(...) を置き換えるだけで対応できます
-    val inboundRows = remember {
-//        loadInboundRows()
+    var inboundRows by remember { mutableStateOf<List<InboundRowModel>>(emptyList()) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-
-        listOf(
-            InboundRowModel(
-                inboundNo = "IN-20260417-001",
-                receivedAt = LocalDateTime.now().minusHours(2),
-                productCode = "P-001",
-                productName = "検品用ラベル",
-                barcode = "4901234567890",
-                warehouseName = "東京倉庫",
-                locationName = "A-01-01",
-                quantity = 120,
-                note = "午前便"
-            ),
-            InboundRowModel(
-                inboundNo = "IN-20260416-004",
-                receivedAt = LocalDateTime.now().minusDays(1),
-                productCode = "P-002",
-                productName = "梱包箱M",
-                barcode = "4909999999999",
-                warehouseName = "大阪倉庫",
-                locationName = "B-02-03",
-                quantity = 50,
-                note = ""
-            ),
-            InboundRowModel(
-                inboundNo = "IN-20260415-003",
-                receivedAt = LocalDateTime.now().minusDays(2),
-                productCode = "P-003",
-                productName = "作業用手袋",
-                barcode = "4901111111111",
-                warehouseName = "東京倉庫",
-                locationName = "A-02-04",
-                quantity = 80,
-                note = "午後便"
-            )
-        )
+    suspend fun reload() {
+        runCatching {
+            PcDependencies.inventoryMovementClient
+                .getMovements()
+                .movements
+                .filter { it.operation == StockOperation.INBOUND }
+                .sortedByDescending { it.occurredAt }
+                .map { it.toInboundRowModel() }
+        }.onSuccess { rows ->
+            inboundRows = rows
+            errorMessage = null
+        }.onFailure { e ->
+            errorMessage = e.message ?: "入庫一覧の取得に失敗しました"
+        }
     }
 
-    InboundListScreen(
-        allRows = inboundRows,
-        onOpenDetail = { row ->
-            println("open inbound detail: ${row.inboundNo}")
-        },
-        onCreateNew = {
-            println("open inbound create")
+    LaunchedEffect(Unit) {
+        reload()
+
+        launch {
+            PcDependencies.inventoryRealtimeClient.connect { message ->
+                if (message.movement.operation == StockOperation.INBOUND) {
+                    reload()
+                }
+            }
         }
-    )
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        errorMessage?.let { message ->
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    modifier = Modifier.padding(16.dp),
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+
+        InboundListScreen(
+            allRows = inboundRows,
+            onOpenDetail = { row ->
+                println("open inbound detail: ${row.inboundNo}")
+            },
+            onCreateNew = {
+                println("open inbound create")
+            }
+        )
+    }
 }
 
-private fun loadInboundRows(): List<InboundRowModel> {
-    // ここはあなたの InboundRepository の実際のメソッド名と
-    // レコード型のプロパティ名に合わせて調整する場所です
-    return emptyList()
+private fun StockMovementDto.toInboundRowModel(): InboundRowModel {
+    return InboundRowModel(
+        inboundNo = referenceNo,
+        receivedAt = OffsetDateTime.parse(occurredAt).toLocalDateTime(),
+        productCode = itemId,
+        productName = itemName,
+        barcode = null,
+        warehouseName = warehouseCode,
+        locationName = locationCode,
+        quantity = quantity.toInt(),
+        note = note.orEmpty(),
+        operatorName = operatorName,
+    )
 }
