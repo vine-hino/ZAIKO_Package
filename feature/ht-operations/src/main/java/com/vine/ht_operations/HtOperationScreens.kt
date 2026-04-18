@@ -494,32 +494,15 @@ fun HtStocktakeScreen(
                         )
                         Text(text = message)
 
-                        uiState.exportMessage?.let { exportMessage ->
-                            Text(
-                                text = exportMessage,
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Button(
-                                onClick = viewModel::exportJson,
-                                enabled = !uiState.isExporting,
-                            ) {
-                                Text(
-                                    if (uiState.isExporting) "書き出し中..." else "JSON書き出し"
-                                )
-                            }
-
                             Button(
                                 onClick = {
                                     viewModel.clearCompletedState()
                                     onComplete()
                                 },
-                                enabled = !uiState.isExporting,
+                                enabled = !uiState.isSaving,
                             ) {
                                 Text("完了")
                             }

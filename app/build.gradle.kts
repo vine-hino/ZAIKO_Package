@@ -61,6 +61,13 @@ kapt {
 }
 
 dependencies {
+    implementation(project(":shared:inventory-contract"))
+
+    implementation("io.ktor:ktor-client-core:2.3.9")
+    implementation("io.ktor:ktor-client-okhttp:2.3.9")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.9")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.9")
+
     implementation(project(":core:designsystem"))
     implementation(project(":core:navigation"))
     implementation(project(":feature:auth"))
@@ -72,7 +79,6 @@ dependencies {
     implementation(project(":data:connector-db"))
     implementation(project(":data:connector-cloud"))
     implementation(project(":core:database"))
-
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -102,5 +108,4 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
 
-    implementation(project(":connector-http"))
 }

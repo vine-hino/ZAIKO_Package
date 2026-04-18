@@ -1,5 +1,8 @@
 package com.vine.inventory_contract
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class StocktakeTransferPayload(
     val schemaVersion: Int = 1,
     val batchId: String,
@@ -10,16 +13,18 @@ data class StocktakeTransferPayload(
     val details: List<StocktakeTransferDetail>,
 )
 
+@Serializable
 data class StocktakeTransferHeader(
     val operationUuid: String,
     val stocktakeNo: String,
-    val stocktakeDate: String,   // YYYY-MM-DD
+    val stocktakeDate: String,
     val warehouseCode: String?,
-    val status: String,          // DRAFT / CONFIRMED
+    val status: String,
     val enteredByCode: String,
     val note: String? = null,
 )
 
+@Serializable
 data class StocktakeTransferDetail(
     val detailUuid: String,
     val operationUuid: String,

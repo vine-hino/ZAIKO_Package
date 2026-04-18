@@ -1,45 +1,92 @@
 package com.vine.pc_app
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import java.time.LocalDateTime
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.vine.inventory_contract.StockMovementDto
+import com.vine.inventory_contract.StockOperation
+import kotlinx.coroutines.launch
+import java.time.OffsetDateTime
 
 @Composable
 fun PcOutboundManagementScreen() {
-    val outboundRows = remember {
-        listOf(
-            OutboundRowModel(
-                outboundNo = "OUT-20260417-001",
-                outboundAt = LocalDateTime.now().minusHours(1),
-                productCode = "P-001",
-                productName = "検品用ラベル",
-                barcode = "4901234567890",
-                warehouseName = "東京倉庫",
-                locationName = "A-01-01",
-                quantity = 30,
-                note = "午後出荷"
-            ),
-            OutboundRowModel(
-                outboundNo = "OUT-20260416-004",
-                outboundAt = LocalDateTime.now().minusDays(1),
-                productCode = "P-002",
-                productName = "梱包箱M",
-                barcode = "4909999999999",
-                warehouseName = "大阪倉庫",
-                locationName = "B-02-03",
-                quantity = 12,
-                note = ""
-            )
-        )
+    var outboundRows by remember { mutableStateOf<List<OutboundRowModel>>(emptyList()) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    suspend fun reload() {
+        runCatching {
+            PcDependencies.inventoryMovementClient
+                .getMovements()
+                .movements
+                .filter { it.operation == StockOperation.OUTBOUND }
+                .sortedByDescending { it.occurredAt }
+                .map { it.toOutboundRowModel() }
+        }.onSuccess { rows ->
+            outboundRows = rows
+            errorMessage = null
+        }.onFailure { e ->
+            errorMessage = e.message ?: "出庫一覧の取得に失敗しました"
+        }
     }
 
-    OutboundListScreen(
-        allRows = outboundRows,
-        onOpenDetail = { row ->
-            println("open outbound detail: ${row.outboundNo}")
-        },
-        onCreateNew = {
-            println("open outbound create")
+    LaunchedEffect(Unit) {
+        reload()
+
+        launch {
+            PcDependencies.inventoryRealtimeClient.connect { message ->
+                if (message.movement.operation == StockOperation.OUTBOUND) {
+                    reload()
+                }
+            }
         }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        errorMessage?.let { message ->
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    modifier = Modifier.padding(16.dp),
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+
+        OutboundListScreen(
+            allRows = outboundRows,
+            onOpenDetail = { row ->
+                println("open outbound detail: ${row.outboundNo}")
+            },
+            onCreateNew = {
+                println("open outbound create")
+            }
+        )
+    }
+}
+
+private fun StockMovementDto.toOutboundRowModel(): OutboundRowModel {
+    return OutboundRowModel(
+        outboundNo = referenceNo,
+        outboundAt = OffsetDateTime.parse(occurredAt).toLocalDateTime(),
+        productCode = itemId,
+        productName = itemName,
+        barcode = null,
+        warehouseName = warehouseCode,
+        locationName = locationCode,
+        quantity = quantity.toInt(),
+        note = note.orEmpty(),
+        operatorName = operatorName,
     )
 }

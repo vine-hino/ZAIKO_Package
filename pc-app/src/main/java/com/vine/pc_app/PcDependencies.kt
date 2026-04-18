@@ -1,16 +1,26 @@
 package com.vine.pc_app
 
+import com.vine.pc_app.network.InventoryMovementClient
+import com.vine.pc_app.network.InventoryRealtimeClient
 import com.vine.pc_data_postgres.InboundJsonImporter
 import com.vine.pc_data_postgres.InboundRepository
+import com.vine.pc_data_postgres.OutboundJsonImporter
+import com.vine.pc_data_postgres.OutboundRepository
 import com.vine.pc_data_postgres.PgConfig
 import com.vine.pc_data_postgres.PostgresDataSourceFactory
 import com.vine.pc_data_postgres.PostgresInboundRepository
+import com.vine.pc_data_postgres.PostgresOutboundRepository
 import com.vine.pc_data_postgres.PostgresStocktakeRepository
 import com.vine.pc_data_postgres.StocktakeJsonImporter
 import com.vine.pc_data_postgres.StocktakeRepository
-import com.vine.pc_data_postgres.OutboundJsonImporter
-import com.vine.pc_data_postgres.OutboundRepository
-import com.vine.pc_data_postgres.PostgresOutboundRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
+import com.vine.pc_app.network.StocktakeServerClient
+import com.vine.pc_app.network.StockBalanceClient
 
 object PcDependencies {
     private val config = PgConfig(
@@ -56,5 +66,50 @@ object PcDependencies {
     val outboundJsonImporter: OutboundJsonImporter by lazy {
         outboundRepository.bootstrap()
         OutboundJsonImporter(dataSource)
+    }
+
+    private val serverJson by lazy {
+        Json {
+            ignoreUnknownKeys = true
+            prettyPrint = false
+        }
+    }
+
+    private val serverHttpClient by lazy {
+        HttpClient(CIO) {
+            install(ContentNegotiation) {
+                json(serverJson)
+            }
+            install(WebSockets)
+        }
+    }
+
+    val inventoryMovementClient: InventoryMovementClient by lazy {
+        InventoryMovementClient(
+            client = serverHttpClient,
+            baseUrl = "http://127.0.0.1:8080",
+        )
+    }
+
+    val inventoryRealtimeClient: InventoryRealtimeClient by lazy {
+        InventoryRealtimeClient(
+            client = serverHttpClient,
+            wsUrl = "ws://127.0.0.1:8080/ws/inventory",
+            json = serverJson,
+        )
+    }
+
+    val stocktakeServerClient: StocktakeServerClient by lazy {
+        StocktakeServerClient(
+            client = serverHttpClient,
+            baseUrl = "http://127.0.0.1:8080",
+        )
+    }
+
+    val stockBalanceClient: StockBalanceClient by lazy {
+        StockBalanceClient(
+            client = serverHttpClient,
+            baseUrl = "http://127.0.0.1:8080",
+        )
     }
 }
