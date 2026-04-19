@@ -21,9 +21,17 @@ class ServerPostgresStocktakeDraftRepository(
                         warehouse_name VARCHAR(255),
                         status VARCHAR(32) NOT NULL,
                         line_count INT NOT NULL,
+                        discrepancy_line_count INT NOT NULL DEFAULT 0,
                         entered_by_name VARCHAR(128),
                         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     )
+                    """.trimIndent()
+                )
+
+                statement.execute(
+                    """
+                    ALTER TABLE server_stocktake_drafts
+                    ADD COLUMN IF NOT EXISTS discrepancy_line_count INT NOT NULL DEFAULT 0
                     """.trimIndent()
                 )
 
@@ -71,8 +79,9 @@ class ServerPostgresStocktakeDraftRepository(
                         warehouse_name,
                         status,
                         line_count,
+                        discrepancy_line_count,
                         entered_by_name
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """.trimIndent()
                 ).use { statement ->
                     statement.setString(1, summary.operationUuid)
@@ -82,7 +91,8 @@ class ServerPostgresStocktakeDraftRepository(
                     statement.setString(5, summary.warehouseName)
                     statement.setString(6, summary.status)
                     statement.setInt(7, summary.lineCount)
-                    statement.setString(8, summary.enteredByName)
+                    statement.setInt(8, summary.discrepancyLineCount)
+                    statement.setString(9, summary.enteredByName)
                     statement.executeUpdate()
                 }
 
@@ -143,6 +153,7 @@ class ServerPostgresStocktakeDraftRepository(
                         warehouse_name,
                         status,
                         line_count,
+                        discrepancy_line_count,
                         entered_by_name
                     FROM server_stocktake_drafts
                     """.trimIndent()
@@ -169,6 +180,7 @@ class ServerPostgresStocktakeDraftRepository(
                             warehouseName = rs.getString("warehouse_name"),
                             status = rs.getString("status"),
                             lineCount = rs.getInt("line_count"),
+                            discrepancyLineCount = rs.getInt("discrepancy_line_count"),
                             enteredByName = rs.getString("entered_by_name"),
                         )
                     }

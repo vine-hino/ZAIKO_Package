@@ -50,6 +50,8 @@ class StocktakeService(
             diffQuantity = request.actualQuantity - bookQuantity,
         )
 
+        val details = listOf(detail)
+
         val summary = StocktakeSummary(
             operationUuid = operationUuid,
             stocktakeNo = stocktakeNo,
@@ -57,13 +59,14 @@ class StocktakeService(
             warehouseCode = request.warehouseCode,
             warehouseName = request.warehouseCode,
             status = "DRAFT",
-            lineCount = 1,
+            lineCount = details.size,
+            discrepancyLineCount = details.count { it.diffQuantity != 0L },
             enteredByName = request.operatorCode,
         )
 
         stocktakeRepository.save(
             summary = summary,
-            details = listOf(detail),
+            details = details,
         )
 
         return summary

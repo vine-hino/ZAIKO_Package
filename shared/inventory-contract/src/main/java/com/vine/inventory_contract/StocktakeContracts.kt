@@ -36,6 +36,7 @@ data class StocktakeSummary(
     val warehouseName: String?,
     val status: String,
     val lineCount: Int,
+    val discrepancyLineCount: Int,
     val enteredByName: String?,
 )
 
