@@ -77,10 +77,7 @@ fun PcAppShell() {
 
                     PcMenu.STOCK -> PcStockReferenceScreen()
 
-                    PcMenu.MASTER -> PcPlaceholderScreen(
-                        title = "マスタ管理",
-                        description = "将来は商品、倉庫、ロケーション、担当者、理由を管理します。",
-                    )
+                    PcMenu.MASTER -> PcMasterManagementScreen()
 
                     PcMenu.SYNC -> PcPlaceholderScreen(
                         title = "同期管理",

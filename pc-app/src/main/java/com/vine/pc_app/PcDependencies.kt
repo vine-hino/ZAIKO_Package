@@ -21,6 +21,9 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import com.vine.pc_app.network.StocktakeServerClient
 import com.vine.pc_app.network.StockBalanceClient
+import com.vine.pc_data_postgres.MasterRepository
+import com.vine.pc_data_postgres.PostgresMasterRepository
+
 
 object PcDependencies {
     private val config = PgConfig(
@@ -111,5 +114,11 @@ object PcDependencies {
             client = serverHttpClient,
             baseUrl = "http://127.0.0.1:8080",
         )
+    }
+
+    val masterRepository: MasterRepository by lazy {
+        val repository = PostgresMasterRepository(dataSource)
+        repository.bootstrap()
+        repository
     }
 }
