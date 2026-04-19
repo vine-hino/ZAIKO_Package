@@ -90,6 +90,7 @@ class PostgresStocktakeRepository(
                             warehouseName = rs.getString("warehouse_name"),
                             status = rs.getString("status"),
                             lineCount = rs.getInt("line_count"),
+                            discrepancyLineCount = 0,
                             enteredByName = rs.getString("entered_by_name"),
                         )
                     }
