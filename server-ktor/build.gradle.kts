@@ -25,4 +25,5 @@ dependencies {
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("org.postgresql:postgresql:42.7.10")
+    implementation(project(":data:connector-api"))
 }

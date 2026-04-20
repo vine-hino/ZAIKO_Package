@@ -98,4 +98,29 @@ interface ProductDao {
         """
     )
     suspend fun deleteBarcodesByProductId(productId: Long)
+
+    @Query(
+        """
+    SELECT *
+    FROM products
+    ORDER BY product_code
+    LIMIT :limit
+    """
+    )
+    suspend fun allProducts(limit: Int): List<ProductEntity>
+
+    @Query(
+        """
+    SELECT *
+    FROM products
+    WHERE product_code LIKE '%' || :keyword || '%'
+       OR product_name LIKE '%' || :keyword || '%'
+    ORDER BY product_code
+    LIMIT :limit
+    """
+    )
+    suspend fun searchProducts(
+        keyword: String,
+        limit: Int,
+    ): List<ProductEntity>
 }
