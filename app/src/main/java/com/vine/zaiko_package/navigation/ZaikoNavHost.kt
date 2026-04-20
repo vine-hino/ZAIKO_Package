@@ -63,12 +63,7 @@ fun ZaikoNavHost() {
         }
 
         composable(ZaikoRoute.HT_INBOUND) {
-            HtInboundRoute(
-                onBack = { navController.popBackStack() },
-                onComplete = { message ->
-                    navController.navigate(ZaikoRoute.htResult(message))
-                },
-            )
+            HtInboundRoute()
         }
 
         composable(ZaikoRoute.HT_OUTBOUND) {

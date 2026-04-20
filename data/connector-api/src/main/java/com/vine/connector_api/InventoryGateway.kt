@@ -5,6 +5,7 @@ import com.vine.inventory_contract.GetStocktakeDetailsQuery
 import com.vine.inventory_contract.GetStocktakeSummariesQuery
 import com.vine.inventory_contract.StocktakeDetail
 import com.vine.inventory_contract.StocktakeSummary
+import com.vine.connector_api.MasterLookupItem
 
 interface InventoryGateway {
     fun currentConnectionType(): ConnectionType
@@ -54,4 +55,11 @@ interface InventoryGateway {
         outputFilePath: String,
         sourceDeviceId: String? = null,
     ): SubmitResult
+
+    suspend fun searchMasters(
+        type: String,
+        keyword: String? = null,
+        includeInactive: Boolean = false,
+        limit: Int = 50,
+    ): List<MasterLookupItem>
 }

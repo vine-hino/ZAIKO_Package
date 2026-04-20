@@ -42,6 +42,8 @@ import com.vine.inventory_contract.GetStocktakeSummariesQuery
 import com.vine.inventory_contract.StocktakeDetail
 import com.vine.inventory_contract.StocktakeSummary
 import java.io.File
+import com.vine.connector_api.MasterLookupItem
+
 
 @Singleton
 class DbInventoryGateway @Inject constructor(
@@ -63,6 +65,98 @@ class DbInventoryGateway @Inject constructor(
 
     override fun currentConnectionType(): ConnectionType = ConnectionType.DIRECT_DB
 
+    override suspend fun searchMasters(
+        type: String,
+        keyword: String?,
+        includeInactive: Boolean,
+        limit: Int,
+    ): List<MasterLookupItem> {
+        val normalizedType = type.trim().uppercase()
+        val normalizedKeyword = keyword?.trim()?.takeIf { it.isNotEmpty() }
+
+        return when (normalizedType) {
+            "PRODUCT" -> {
+                val rows = if (normalizedKeyword == null) {
+                    productDao.allProducts(limit)
+                } else {
+                    productDao.searchProducts(normalizedKeyword, limit)
+                }
+
+                rows.map {
+                    MasterLookupItem(
+                        type = "PRODUCT",
+                        code = it.productCode,
+                        name = it.productName,
+                        isActive = true,
+                    )
+                }
+            }
+
+            "WAREHOUSE" -> {
+                val rows = if (normalizedKeyword == null) {
+                    warehouseDao.allWarehouses(limit)
+                } else {
+                    warehouseDao.searchWarehouses(normalizedKeyword, limit)
+                }
+
+                rows.map {
+                    MasterLookupItem(
+                        type = "WAREHOUSE",
+                        code = it.warehouseCode,
+                        name = it.warehouseName,
+                        isActive = true,
+                    )
+                }
+            }
+
+            "LOCATION" -> {
+                val rows = if (normalizedKeyword == null) {
+                    warehouseDao.allLocations(limit)
+                } else {
+                    warehouseDao.searchLocations(normalizedKeyword, limit)
+                }
+
+                rows.map { location ->
+                    val warehouse = warehouseDao.findWarehouseById(location.warehouseId)
+
+                    MasterLookupItem(
+                        type = "LOCATION",
+                        code = location.locationCode,
+                        name = location.locationName,
+                        warehouseCode = warehouse?.warehouseCode,
+                        parentCode = null,
+                        isActive = true,
+                    )
+                }
+            }
+
+            "OPERATOR" -> {
+                val rows = if (normalizedKeyword == null) {
+                    warehouseDao.allOperators(limit)
+                } else {
+                    warehouseDao.searchOperators(normalizedKeyword, limit)
+                }
+
+                rows.map {
+                    MasterLookupItem(
+                        type = "OPERATOR",
+                        code = it.operatorCode,
+                        name = it.operatorName,
+                        isActive = true,
+                    )
+                }
+            }
+
+            "REASON" -> {
+                emptyList()
+            }
+
+            else -> {
+                emptyList()
+            }
+        }
+    }
+
     override suspend fun getStocktakeSummaries(
         query: GetStocktakeSummariesQuery,
     ): List<StocktakeSummary> {
@@ -81,6 +175,12 @@ class DbInventoryGateway @Inject constructor(
             val operator = warehouseDao.findOperatorById(header.enteredBy)
             val lineCount = stocktakeDao.countDetailsByStocktakeId(header.id)
 
+            val discrepancyLineCount = stocktakeDao
+                .findStocktakeByOperationUuid(header.operationUuid)
+                ?.details
+                ?.count { it.diffQuantity != 0L }
+                ?: 0
+
             StocktakeSummary(
                 operationUuid = header.operationUuid,
                 stocktakeNo = header.stocktakeNo,
@@ -89,6 +189,7 @@ class DbInventoryGateway @Inject constructor(
                 warehouseName = warehouse?.warehouseName,
                 status = header.status.name,
                 lineCount = lineCount,
+                discrepancyLineCount = discrepancyLineCount,
                 enteredByName = operator?.operatorName,
             )
         }

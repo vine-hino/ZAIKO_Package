@@ -124,4 +124,80 @@ interface WarehouseDao {
         """
     )
     fun observeActiveOperators(): Flow<List<OperatorEntity>>
+
+    @Query(
+        """
+    SELECT *
+    FROM warehouses
+    ORDER BY warehouse_code
+    LIMIT :limit
+    """
+    )
+    suspend fun allWarehouses(limit: Int): List<WarehouseEntity>
+
+    @Query(
+        """
+    SELECT *
+    FROM warehouses
+    WHERE warehouse_code LIKE '%' || :keyword || '%'
+       OR warehouse_name LIKE '%' || :keyword || '%'
+    ORDER BY warehouse_code
+    LIMIT :limit
+    """
+    )
+    suspend fun searchWarehouses(
+        keyword: String,
+        limit: Int,
+    ): List<WarehouseEntity>
+
+    @Query(
+        """
+    SELECT *
+    FROM locations
+    ORDER BY location_code
+    LIMIT :limit
+    """
+    )
+    suspend fun allLocations(limit: Int): List<LocationEntity>
+
+    @Query(
+        """
+    SELECT *
+    FROM locations
+    WHERE location_code LIKE '%' || :keyword || '%'
+       OR location_name LIKE '%' || :keyword || '%'
+       OR scan_code LIKE '%' || :keyword || '%'
+    ORDER BY location_code
+    LIMIT :limit
+    """
+    )
+    suspend fun searchLocations(
+        keyword: String,
+        limit: Int,
+    ): List<LocationEntity>
+
+    @Query(
+        """
+    SELECT *
+    FROM operators
+    ORDER BY operator_code
+    LIMIT :limit
+    """
+    )
+    suspend fun allOperators(limit: Int): List<OperatorEntity>
+
+    @Query(
+        """
+    SELECT *
+    FROM operators
+    WHERE operator_code LIKE '%' || :keyword || '%'
+       OR operator_name LIKE '%' || :keyword || '%'
+    ORDER BY operator_code
+    LIMIT :limit
+    """
+    )
+    suspend fun searchOperators(
+        keyword: String,
+        limit: Int,
+    ): List<OperatorEntity>
 }

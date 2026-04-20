@@ -20,6 +20,12 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import kotlinx.serialization.json.Json
+import com.vine.connector_api.MasterLookupItem
+import com.vine.inventory_contract.GetMasterRecordsQuery
+import com.vine.inventory_contract.MasterType
+import io.ktor.http.HttpStatusCode
+import com.vine.server_ktor.repository.ServerPostgresMasterRepository
+
 
 fun main(args: Array<String>) {
     EngineMain.main(args)
@@ -48,6 +54,8 @@ fun Application.module() {
         bootstrap()
     }
 
+    val masterRepository = ServerPostgresMasterRepository(dataSource).also { it.bootstrap() }
+
     val broadcaster = InventoryBroadcaster(jsonConfig)
 
     val inventoryService = InventoryService(
@@ -63,6 +71,62 @@ fun Application.module() {
     routing {
         get("/health") {
             call.respond(mapOf("status" to "ok"))
+        }
+
+        get("/masters") {
+            val typeParam = call.request.queryParameters["type"]
+                ?.trim()
+                ?.uppercase()
+                .orEmpty()
+
+            val allowedTypes = setOf(
+                "PRODUCT",
+                "WAREHOUSE",
+                "LOCATION",
+                "OPERATOR",
+                "REASON",
+            )
+
+            if (typeParam !in allowedTypes) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("message" to "type must be one of PRODUCT, WAREHOUSE, LOCATION, OPERATOR, REASON")
+                )
+                return@get
+            }
+
+            val keyword = call.request.queryParameters["q"]
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+
+            val includeInactive = call.request.queryParameters["includeInactive"]
+                ?.toBooleanStrictOrNull()
+                ?: false
+
+            val limit = call.request.queryParameters["limit"]
+                ?.toIntOrNull()
+                ?.coerceIn(1, 500)
+                ?: 50
+
+            val rows = masterRepository.search(
+                type = typeParam,
+                keyword = keyword,
+                includeInactive = includeInactive,
+                limit = limit,
+            )
+
+            call.respond(
+                rows.map {
+                    MasterLookupItem(
+                        type = it.type,
+                        code = it.code,
+                        name = it.name,
+                        warehouseCode = it.warehouseCode,
+                        parentCode = it.parentCode,
+                        isActive = it.isActive,
+                    )
+                }
+            )
         }
 
         inventoryRoutes(inventoryService)
