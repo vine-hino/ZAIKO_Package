@@ -5,6 +5,7 @@ import com.vine.zaiko_package.bootstrap.InitialMasterSeeder
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
+import com.vine.zaiko_package.BuildConfig
 
 @HiltAndroidApp
 class ZaikoApplication : Application() {
@@ -16,7 +17,9 @@ class ZaikoApplication : Application() {
         super.onCreate()
 
         runBlocking {
-            initialMasterSeeder.seedIfNeeded()
+            if (BuildConfig.DEBUG && BuildConfig.ENABLE_LOCAL_MASTER_SEED) {
+                initialMasterSeeder.seedIfNeeded()
+            }
         }
     }
 }

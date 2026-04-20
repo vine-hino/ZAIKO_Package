@@ -23,8 +23,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +54,7 @@ fun HtHomeRoute(
             onMoveClick = onMoveClick,
             onStocktakeClick = onStocktakeClick,
             onAdjustmentClick = onAdjustmentClick,
+            onRefresh = viewModel::refresh,
         )
     }
 }
@@ -74,6 +75,7 @@ private fun HtHomeContent(
     onMoveClick: () -> Unit,
     onStocktakeClick: () -> Unit,
     onAdjustmentClick: () -> Unit,
+    onRefresh: () -> Unit,
 ) {
     val menuItems = listOf(
         HtMenuItem("在庫照会", "商品・ロケーション別の在庫確認", onStockClick),
@@ -102,6 +104,16 @@ private fun HtHomeContent(
             todayOutbound = uiState.todayOutbound,
             unsyncedCount = uiState.unsyncedCount,
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        FilledTonalButton(
+            onClick = onRefresh,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !uiState.isLoading,
+        ) {
+            Text(if (uiState.isLoading) "更新中..." else "ホーム集計を更新")
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -177,8 +189,8 @@ private fun HeaderPanel(
 
 @Composable
 private fun SummaryRow(
-    todayInbound: Int,
-    todayOutbound: Int,
+    todayInbound: Long,
+    todayOutbound: Long,
     unsyncedCount: Int,
 ) {
     Row(
@@ -264,18 +276,16 @@ private fun OperationCard(
                 )
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
             FilledTonalButton(
-                modifier = Modifier.fillMaxWidth(),
                 onClick = onClick,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("開始")
+                Text("開く")
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.vine.connector_db
 
+import com.vine.connector_api.MasterReferenceGateway
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,5 +40,14 @@ object ServerSyncModule {
     @Named("serverBaseUrl")
     fun provideServerBaseUrl(): String {
         return "http://192.168.11.3:8080"
+    }
+
+    @Provides
+    @Singleton
+    fun provideMasterReferenceGateway(
+        httpClient: HttpClient,
+        @Named("serverBaseUrl") baseUrl: String,
+    ): MasterReferenceGateway {
+        return ServerMasterReferenceGateway(httpClient, baseUrl)
     }
 }

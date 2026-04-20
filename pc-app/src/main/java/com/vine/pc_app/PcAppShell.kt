@@ -70,10 +70,7 @@ fun PcAppShell() {
                         description = "将来はロケーション移動、倉庫間移動の管理をここへ集約します。",
                     )
 
-                    PcMenu.ADJUSTMENT -> PcPlaceholderScreen(
-                        title = "在庫調整",
-                        description = "将来は調整理由付きで手動補正や差異調整を行います。",
-                    )
+                    PcMenu.ADJUSTMENT -> PcAdjustmentManagementScreen()
 
                     PcMenu.STOCK -> PcStockReferenceScreen()
 

@@ -421,6 +421,7 @@ private fun DashboardRecentMovementRow(
     val operationLabel = when (movement.operation) {
         StockOperation.INBOUND -> "入庫"
         StockOperation.OUTBOUND -> "出庫"
+        StockOperation.ADJUST -> "調整"
     }
 
     Row(

@@ -2,7 +2,6 @@ package com.vine.ht_operations
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,14 +11,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -32,37 +29,19 @@ fun HtOutboundRoute(
     onComplete: (String) -> Unit,
     viewModel: HtOutboundViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val completedMessage = viewModel.completedMessage
+    LaunchedEffect(completedMessage) {
+        completedMessage?.let {
+            viewModel.consumeCompleted()
+            onComplete(it)
+        }
+    }
 
-    HtOutboundScreen(
-        uiState = uiState,
-        onBack = onBack,
-        onProductCodeChanged = viewModel::onProductCodeChanged,
-        onLocationCodeChanged = viewModel::onLocationCodeChanged,
-        onQuantityChanged = viewModel::onQuantityChanged,
-        onNoteChanged = viewModel::onNoteChanged,
-        onSubmit = viewModel::submit,
-        onExportJson = viewModel::exportJson,
-        onFinish = {
-            val message = uiState.completedMessage ?: "出庫を登録しました"
-            viewModel.clearCompletedState()
-            onComplete(message)
-        },
-    )
-}
+    val canSave = viewModel.productLookup.selected != null &&
+            viewModel.locationLookup.selected != null &&
+            viewModel.quantityText.toIntOrNull()?.let { it > 0 } == true &&
+            !viewModel.isSubmitting
 
-@Composable
-private fun HtOutboundScreen(
-    uiState: HtOutboundUiState,
-    onBack: () -> Unit,
-    onProductCodeChanged: (String) -> Unit,
-    onLocationCodeChanged: (String) -> Unit,
-    onQuantityChanged: (String) -> Unit,
-    onNoteChanged: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onExportJson: () -> Unit,
-    onFinish: () -> Unit,
-) {
     ZaikoScreenScaffold(
         title = "HT 出庫登録",
         onBack = onBack,
@@ -75,105 +54,62 @@ private fun HtOutboundScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = uiState.productCode,
-                onValueChange = onProductCodeChanged,
-                label = { Text("商品コード") },
-                singleLine = true,
-                enabled = !uiState.isSaving && !uiState.isExporting,
+            MasterLookupField(
+                label = "商品",
+                state = viewModel.productLookup,
+                onQueryChange = viewModel::onProductQueryChanged,
+                onSelect = viewModel::selectProduct,
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            MasterLookupField(
+                label = "ロケーション",
+                state = viewModel.locationLookup,
+                onQueryChange = viewModel::onLocationQueryChanged,
+                onSelect = viewModel::selectLocation,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = uiState.locationCode,
-                onValueChange = onLocationCodeChanged,
-                label = { Text("出庫元ロケーション") },
-                singleLine = true,
-                enabled = !uiState.isSaving && !uiState.isExporting,
-            )
-
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = uiState.quantity,
-                onValueChange = onQuantityChanged,
+                value = viewModel.quantityText,
+                onValueChange = viewModel::onQuantityChanged,
                 label = { Text("数量") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
-                enabled = !uiState.isSaving && !uiState.isExporting,
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = uiState.note,
-                onValueChange = onNoteChanged,
+                value = viewModel.noteText,
+                onValueChange = viewModel::onNoteChanged,
                 label = { Text("備考") },
                 singleLine = true,
-                enabled = !uiState.isSaving && !uiState.isExporting,
             )
 
-            uiState.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+            viewModel.errorMessage?.let { message ->
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = message,
                     color = MaterialTheme.colorScheme.error,
                 )
             }
 
-            uiState.completedMessage?.let { message ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = "保存完了",
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(text = message)
+            Spacer(modifier = Modifier.height(20.dp))
 
-                        uiState.exportMessage?.let { exportMessage ->
-                            Text(
-                                text = exportMessage,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Button(
-                                onClick = onExportJson,
-                                enabled = !uiState.isExporting,
-                            ) {
-                                Text(
-                                    if (uiState.isExporting) "書き出し中..." else "JSON書き出し"
-                                )
-                            }
-
-                            Button(
-                                onClick = onFinish,
-                                enabled = !uiState.isExporting,
-                            ) {
-                                Text("完了")
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (uiState.completedMessage == null) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = uiState.canSubmit,
-                    onClick = onSubmit,
-                ) {
-                    if (uiState.isSaving) {
-                        CircularProgressIndicator()
-                    } else {
-                        Text("登録")
-                    }
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = canSave,
+                onClick = viewModel::submitOutbound,
+            ) {
+                if (viewModel.isSubmitting) {
+                    CircularProgressIndicator()
+                } else {
+                    Text("登録")
                 }
             }
         }

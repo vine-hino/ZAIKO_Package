@@ -26,9 +26,18 @@ class ServerPostgresStockMovementRepository(
                         warehouse_code VARCHAR(64) NOT NULL,
                         location_code VARCHAR(64) NOT NULL,
                         note TEXT NULL,
+                        adjustment_reason_code VARCHAR(64) NULL,
+                        adjustment_reason_name VARCHAR(128) NULL,
                         occurred_at TIMESTAMPTZ NOT NULL
                     )
                     """.trimIndent()
+                )
+
+                statement.execute(
+                    "ALTER TABLE server_stock_movements ADD COLUMN IF NOT EXISTS adjustment_reason_code VARCHAR(64) NULL"
+                )
+                statement.execute(
+                    "ALTER TABLE server_stock_movements ADD COLUMN IF NOT EXISTS adjustment_reason_name VARCHAR(128) NULL"
                 )
 
                 statement.execute(
@@ -56,8 +65,10 @@ class ServerPostgresStockMovementRepository(
                     warehouse_code,
                     location_code,
                     note,
+                    adjustment_reason_code,
+                    adjustment_reason_name,
                     occurred_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """.trimIndent()
             ).use { statement ->
                 statement.setString(1, movement.id)
@@ -70,7 +81,9 @@ class ServerPostgresStockMovementRepository(
                 statement.setString(8, movement.warehouseCode)
                 statement.setString(9, movement.locationCode)
                 statement.setString(10, movement.note)
-                statement.setObject(11, OffsetDateTime.parse(movement.occurredAt))
+                statement.setString(11, movement.adjustmentReasonCode)
+                statement.setString(12, movement.adjustmentReasonName)
+                statement.setObject(13, OffsetDateTime.parse(movement.occurredAt))
                 statement.executeUpdate()
             }
         }
@@ -91,6 +104,8 @@ class ServerPostgresStockMovementRepository(
                     warehouse_code,
                     location_code,
                     note,
+                    adjustment_reason_code,
+                    adjustment_reason_name,
                     occurred_at
                 FROM server_stock_movements
                 ORDER BY occurred_at DESC
@@ -110,6 +125,8 @@ class ServerPostgresStockMovementRepository(
                             warehouseCode = rs.getString("warehouse_code"),
                             locationCode = rs.getString("location_code"),
                             note = rs.getString("note"),
+                            adjustmentReasonCode = rs.getString("adjustment_reason_code"),
+                            adjustmentReasonName = rs.getString("adjustment_reason_name"),
                             occurredAt = rs.getObject("occurred_at", OffsetDateTime::class.java).toString(),
                         )
                     }
@@ -129,7 +146,9 @@ class ServerPostgresStockMovementRepository(
                     SUM(
                         CASE
                             WHEN operation = 'INBOUND' THEN quantity
-                            ELSE -quantity
+                            WHEN operation = 'OUTBOUND' THEN -quantity
+                            WHEN operation = 'ADJUST' THEN quantity
+                            ELSE 0
                         END
                     ) AS current_quantity
                 FROM server_stock_movements

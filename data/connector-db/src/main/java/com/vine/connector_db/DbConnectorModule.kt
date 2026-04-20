@@ -1,5 +1,6 @@
 package com.vine.connector_db
 
+import com.vine.connector_api.HomeDashboardGateway
 import com.vine.connector_api.InventoryGateway
 import dagger.Binds
 import dagger.Module
@@ -13,4 +14,9 @@ abstract class DbConnectorModule {
     abstract fun bindInventoryGateway(
         impl: HybridInventoryGateway,
     ): InventoryGateway
+
+    @Binds
+    abstract fun bindHomeDashboardGateway(
+        impl: ServerHomeDashboardGateway,
+    ): HomeDashboardGateway
 }
