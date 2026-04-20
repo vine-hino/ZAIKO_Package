@@ -19,8 +19,18 @@ class InventoryService(
     private val broadcaster: InventoryBroadcaster,
 ) {
     suspend fun register(request: RegisterStockMovementRequest): StockMovementDto {
-        require(request.quantity > 0) {
-            "quantity must be greater than 0"
+        when (request.operation) {
+            StockOperation.INBOUND,
+            StockOperation.OUTBOUND -> {
+                require(request.quantity > 0) {
+                    "quantity must be greater than 0"
+                }
+            }
+            StockOperation.ADJUST -> {
+                require(request.quantity != 0L) {
+                    "quantity must not be 0"
+                }
+            }
         }
 
         val now = Instant.now()
@@ -35,6 +45,8 @@ class InventoryService(
             warehouseCode = request.warehouseCode,
             locationCode = request.locationCode,
             note = request.note,
+            adjustmentReasonCode = request.adjustmentReasonCode,
+            adjustmentReasonName = request.adjustmentReasonName,
             occurredAt = now.toString(),
         )
 
@@ -79,6 +91,7 @@ class InventoryService(
                     when (movement.operation) {
                         StockOperation.INBOUND -> movement.quantity
                         StockOperation.OUTBOUND -> -movement.quantity
+                        StockOperation.ADJUST -> movement.quantity
                     }
                 }
 
@@ -126,6 +139,7 @@ class InventoryService(
         val prefix = when (operation) {
             StockOperation.INBOUND -> "IN"
             StockOperation.OUTBOUND -> "OUT"
+            StockOperation.ADJUST -> "ADJ"
         }
 
         val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")

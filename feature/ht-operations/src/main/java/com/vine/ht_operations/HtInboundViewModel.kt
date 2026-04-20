@@ -5,246 +5,230 @@ import androidx.lifecycle.viewModelScope
 import com.vine.connector_api.InboundCommand
 import com.vine.connector_api.InventoryGateway
 import com.vine.connector_api.MasterLookupItem
+import com.vine.connector_api.MasterReferenceGateway
+import com.vine.connector_api.MasterType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 @HiltViewModel
 class HtInboundViewModel @Inject constructor(
     private val inventoryGateway: InventoryGateway,
+    private val masterReferenceGateway: MasterReferenceGateway,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HtInboundUiState())
-    val uiState: StateFlow<HtInboundUiState> = _uiState.asStateFlow()
+    var productLookup by mutableStateOf(LookupUiState())
+        private set
 
-    fun onProductKeywordChanged(value: String) {
-        _uiState.update {
-            it.copy(
-                productKeyword = value,
-                errorMessage = null,
-                successMessage = null,
-            )
-        }
+    var locationLookup by mutableStateOf(LookupUiState())
+        private set
+
+    var quantityText by mutableStateOf("")
+        private set
+
+    var noteText by mutableStateOf("")
+        private set
+
+    var isSubmitting by mutableStateOf(false)
+        private set
+
+    var errorMessage by mutableStateOf<String?>(null)
+        private set
+
+    var completedMessage by mutableStateOf<String?>(null)
+        private set
+
+    private var productSearchJob: Job? = null
+    private var locationSearchJob: Job? = null
+
+    fun onProductQueryChanged(value: String) {
+        productLookup = productLookup.copy(
+            query = value,
+            selected = null,
+            errorMessage = null,
+        )
+        searchProducts(value)
     }
 
-    fun onLocationKeywordChanged(value: String) {
-        _uiState.update {
-            it.copy(
-                locationKeyword = value,
-                errorMessage = null,
-                successMessage = null,
-            )
-        }
+    fun onLocationQueryChanged(value: String) {
+        locationLookup = locationLookup.copy(
+            query = value,
+            selected = null,
+            errorMessage = null,
+        )
+        searchLocations(value)
     }
 
     fun onQuantityChanged(value: String) {
-        val normalized = value.filter { it.isDigit() }
-        _uiState.update {
-            it.copy(
-                quantity = normalized,
-                errorMessage = null,
-                successMessage = null,
-            )
-        }
+        quantityText = value
+        errorMessage = null
     }
 
     fun onNoteChanged(value: String) {
-        _uiState.update {
-            it.copy(
-                note = value,
-                errorMessage = null,
-                successMessage = null,
-            )
-        }
-    }
-
-    fun searchProducts() {
-        val keyword = _uiState.value.productKeyword.trim()
-
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isSearchingProducts = true,
-                    errorMessage = null,
-                    successMessage = null,
-                )
-            }
-
-            runCatching {
-                inventoryGateway.searchMasters(
-                    type = "PRODUCT",
-                    keyword = keyword.ifBlank { null },
-                    includeInactive = false,
-                    limit = 20,
-                )
-            }.onSuccess { result ->
-                _uiState.update {
-                    it.copy(
-                        productCandidates = result,
-                        isSearchingProducts = false,
-                    )
-                }
-            }.onFailure { error ->
-                _uiState.update {
-                    it.copy(
-                        isSearchingProducts = false,
-                        errorMessage = error.message ?: "商品検索に失敗しました",
-                    )
-                }
-            }
-        }
-    }
-
-    fun searchLocations() {
-        val keyword = _uiState.value.locationKeyword.trim()
-
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isSearchingLocations = true,
-                    errorMessage = null,
-                    successMessage = null,
-                )
-            }
-
-            runCatching {
-                inventoryGateway.searchMasters(
-                    type = "LOCATION",
-                    keyword = keyword.ifBlank { null },
-                    includeInactive = false,
-                    limit = 20,
-                )
-            }.onSuccess { result ->
-                _uiState.update {
-                    it.copy(
-                        locationCandidates = result,
-                        isSearchingLocations = false,
-                    )
-                }
-            }.onFailure { error ->
-                _uiState.update {
-                    it.copy(
-                        isSearchingLocations = false,
-                        errorMessage = error.message ?: "ロケーション検索に失敗しました",
-                    )
-                }
-            }
-        }
+        noteText = value
+        errorMessage = null
     }
 
     fun selectProduct(item: MasterLookupItem) {
-        _uiState.update {
-            it.copy(
-                selectedProduct = item,
-                productKeyword = "${item.code} ${item.name}",
-                productCandidates = emptyList(),
-                errorMessage = null,
-                successMessage = null,
-            )
-        }
+        productLookup = productLookup.copy(
+            query = item.code,
+            selected = item,
+            candidates = emptyList(),
+            isLoading = false,
+        )
     }
 
     fun selectLocation(item: MasterLookupItem) {
-        _uiState.update {
-            it.copy(
-                selectedLocation = item,
-                locationKeyword = "${item.code} ${item.name}",
-                locationCandidates = emptyList(),
-                errorMessage = null,
-                successMessage = null,
-            )
+        locationLookup = locationLookup.copy(
+            query = item.code,
+            selected = item,
+            candidates = emptyList(),
+            isLoading = false,
+        )
+    }
+
+    private fun searchProducts(query: String) {
+        productSearchJob?.cancel()
+        productSearchJob = viewModelScope.launch {
+            if (query.isBlank()) {
+                productLookup = productLookup.copy(
+                    candidates = emptyList(),
+                    isLoading = false,
+                )
+                return@launch
+            }
+
+            delay(250)
+
+            productLookup = productLookup.copy(isLoading = true)
+            runCatching {
+                masterReferenceGateway.search(
+                    type = MasterType.PRODUCT,
+                    query = query,
+                    limit = 20,
+                    includeInactive = false,
+                )
+            }.onSuccess { items ->
+                productLookup = productLookup.copy(
+                    candidates = items,
+                    isLoading = false,
+                )
+            }.onFailure { e ->
+                productLookup = productLookup.copy(
+                    candidates = emptyList(),
+                    isLoading = false,
+                    errorMessage = e.message ?: "商品候補の取得に失敗しました",
+                )
+            }
         }
     }
 
-    fun clearMessage() {
-        _uiState.update {
-            it.copy(
-                errorMessage = null,
-                successMessage = null,
-            )
+    private fun searchLocations(query: String) {
+        locationSearchJob?.cancel()
+        locationSearchJob = viewModelScope.launch {
+            if (query.isBlank()) {
+                locationLookup = locationLookup.copy(
+                    candidates = emptyList(),
+                    isLoading = false,
+                )
+                return@launch
+            }
+
+            delay(250)
+
+            locationLookup = locationLookup.copy(isLoading = true)
+            runCatching {
+                masterReferenceGateway.search(
+                    type = MasterType.LOCATION,
+                    query = query,
+                    limit = 20,
+                    includeInactive = false,
+                )
+            }.onSuccess { items ->
+                locationLookup = locationLookup.copy(
+                    candidates = items,
+                    isLoading = false,
+                )
+            }.onFailure { e ->
+                locationLookup = locationLookup.copy(
+                    candidates = emptyList(),
+                    isLoading = false,
+                    errorMessage = e.message ?: "ロケーション候補の取得に失敗しました",
+                )
+            }
         }
     }
 
-    fun submit() {
-        val current = _uiState.value
-
-        val product = current.selectedProduct
-        if (product == null) {
-            _uiState.update { it.copy(errorMessage = "商品を選択してください") }
+    fun submitInbound() {
+        val product = productLookup.selected ?: run {
+            errorMessage = "商品を選択してください"
             return
         }
-
-        val location = current.selectedLocation
-        if (location == null) {
-            _uiState.update { it.copy(errorMessage = "ロケーションを選択してください") }
+        val location = locationLookup.selected ?: run {
+            errorMessage = "ロケーションを選択してください"
             return
         }
-
-        val warehouseCode = location.warehouseCode
-        if (warehouseCode.isNullOrBlank()) {
-            _uiState.update { it.copy(errorMessage = "選択したロケーションに倉庫コードがありません") }
+        val warehouseCode = location.warehouseCode ?: run {
+            errorMessage = "倉庫情報が取得できません"
             return
         }
-
-        val quantityValue = current.quantity.toLongOrNull()
-        if (quantityValue == null || quantityValue <= 0L) {
-            _uiState.update { it.copy(errorMessage = "数量は1以上で入力してください") }
+        val quantity = quantityText.toIntOrNull()?.takeIf { it > 0 } ?: run {
+            errorMessage = "数量は1以上で入力してください"
             return
         }
 
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isSubmitting = true,
-                    errorMessage = null,
-                    successMessage = null,
-                )
-            }
+            isSubmitting = true
+            errorMessage = null
 
-            runCatching {
-                inventoryGateway.registerInbound(
-                    InboundCommand(
-                        productCode = product.code,
-                        toWarehouseCode = warehouseCode,
-                        toLocationCode = location.code,
-                        quantity = quantityValue,
-                        operatorCode = DEFAULT_OPERATOR_CODE,
-                        deviceId = DEFAULT_DEVICE_ID,
-                        note = current.note.ifBlank { null },
-                        externalDocNo = null,
-                        inboundPlanId = null,
-                    )
-                )
-            }.onSuccess { result ->
-                if (result.accepted) {
-                    _uiState.update {
-                        it.copy(
-                            quantity = "",
-                            note = "",
-                            isSubmitting = false,
-                            errorMessage = null,
-                            successMessage = result.message,
-                        )
-                    }
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            isSubmitting = false,
-                            errorMessage = result.message,
-                        )
-                    }
-                }
-            }.onFailure { error ->
-                _uiState.update {
-                    it.copy(
-                        isSubmitting = false,
-                        errorMessage = error.message ?: "入庫登録に失敗しました",
-                    )
-                }
+            val command = InboundCommand(
+                productCode = product.code,
+                productName = product.name,
+                toWarehouseCode = warehouseCode,
+                toLocationCode = location.code,
+                quantity = quantity.toLong(),
+                operatorCode = DEFAULT_OPERATOR_CODE,
+                deviceId = DEFAULT_DEVICE_ID,
+                note = noteText.ifBlank { null },
+            )
+            val result = inventoryGateway.registerInbound(command)
+
+            isSubmitting = false
+            if (result.accepted) {
+                completedMessage = buildResultMessage(result.message, result.referenceId)
+                resetForm()
+            } else {
+                errorMessage = result.message
+            }
+        }
+    }
+
+    fun consumeCompleted() {
+        completedMessage = null
+    }
+
+    fun clearError() {
+        errorMessage = null
+    }
+
+    private fun resetForm() {
+        productLookup = LookupUiState()
+        locationLookup = LookupUiState()
+        quantityText = ""
+        noteText = ""
+    }
+
+    private fun buildResultMessage(message: String, referenceId: String?): String {
+        return buildString {
+            append(message)
+            referenceId?.let {
+                append("\n受付番号: ")
+                append(it)
             }
         }
     }

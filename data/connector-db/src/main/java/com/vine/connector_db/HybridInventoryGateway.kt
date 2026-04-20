@@ -1,5 +1,6 @@
 package com.vine.connector_db
 
+import com.vine.connector_api.AdjustmentCommand
 import com.vine.connector_api.ConnectionType
 import com.vine.connector_api.InboundCommand
 import com.vine.connector_api.InventoryGateway
@@ -15,6 +16,7 @@ class HybridInventoryGateway @Inject constructor(
     private val localGateway: DbInventoryGateway,
     private val inboundServerClient: InboundServerClient,
     private val outboundServerClient: OutboundServerClient,
+    private val adjustmentServerClient: AdjustmentServerClient,
     private val stocktakeServerClient: StocktakeServerClient,
     private val database: ZaikoDatabase,
 ) : InventoryGateway by localGateway {
@@ -22,14 +24,9 @@ class HybridInventoryGateway @Inject constructor(
     override fun currentConnectionType(): ConnectionType = ConnectionType.CLOUD
 
     override suspend fun registerInbound(command: InboundCommand): SubmitResult {
-        val productName = database.productDao()
-            .findProductByCode(command.productCode)
-            ?.productName
-            ?: command.productCode
-
         return inboundServerClient.registerInbound(
             productCode = command.productCode,
-            productName = productName,
+            productName = command.productName,
             warehouseCode = command.toWarehouseCode,
             locationCode = command.toLocationCode,
             quantity = command.quantity,
@@ -39,14 +36,9 @@ class HybridInventoryGateway @Inject constructor(
     }
 
     override suspend fun registerOutbound(command: OutboundCommand): SubmitResult {
-        val productName = database.productDao()
-            .findProductByCode(command.productCode)
-            ?.productName
-            ?: command.productCode
-
         return outboundServerClient.registerOutbound(
             productCode = command.productCode,
-            productName = productName,
+            productName = command.productName,
             warehouseCode = command.fromWarehouseCode,
             locationCode = command.fromLocationCode,
             quantity = command.quantity,
@@ -62,14 +54,23 @@ class HybridInventoryGateway @Inject constructor(
                 message = "棚卸明細がありません",
             )
 
-        val productName = database.productDao()
-            .findProductByCode(line.productCode)
-            ?.productName
-            ?: line.productCode
-
         return stocktakeServerClient.saveDraft(
             command = command,
-            productName = productName,
+            productName = line.productName,
+        )
+    }
+
+    override suspend fun registerAdjustment(command: AdjustmentCommand): SubmitResult {
+        return adjustmentServerClient.registerAdjustment(
+            productCode = command.productCode,
+            productName = command.productName,
+            warehouseCode = command.warehouseCode,
+            locationCode = command.locationCode,
+            adjustQuantity = command.adjustQuantity,
+            reasonCode = command.reasonCode,
+            reasonName = command.reasonName,
+            operatorCode = command.operatorCode,
+            note = command.note,
         )
     }
 

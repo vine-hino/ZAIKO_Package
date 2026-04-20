@@ -14,8 +14,15 @@ object ZaikoRoute {
     const val HT_STOCKTAKE = "ht/stocktake"
     const val HT_ADJUSTMENT = "ht/adjustment"
 
+    const val PREPARING_LABEL_ARG = "label"
+    const val HT_PREPARING = "ht/preparing/{$PREPARING_LABEL_ARG}"
+
     const val RESULT_MESSAGE_ARG = "message"
     const val HT_RESULT = "ht/result/{$RESULT_MESSAGE_ARG}"
+
+    fun htPreparing(label: String): String {
+        return "ht/preparing/${Uri.encode(label)}"
+    }
 
     fun htResult(message: String): String {
         return "ht/result/${Uri.encode(message)}"

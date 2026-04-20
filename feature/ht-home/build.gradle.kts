@@ -38,6 +38,7 @@ kapt {
 dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:database"))
+    implementation(project(":data:connector-api"))
 
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)

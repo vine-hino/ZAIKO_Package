@@ -1,7 +1,5 @@
 package com.vine.connector_api
 
-import com.vine.inventory_contract.ConfirmStocktakeCommand
-
 enum class OperationKind {
     INBOUND,
     OUTBOUND,
@@ -54,6 +52,7 @@ data class StockHistoryItem(
 
 data class InboundCommand(
     val productCode: String,
+    val productName: String,
     val toWarehouseCode: String,
     val toLocationCode: String,
     val quantity: Long,
@@ -66,6 +65,7 @@ data class InboundCommand(
 
 data class OutboundCommand(
     val productCode: String,
+    val productName: String,
     val fromWarehouseCode: String,
     val fromLocationCode: String,
     val quantity: Long,
@@ -88,6 +88,7 @@ data class MoveCommand(
 
 data class StocktakeLineCommand(
     val productCode: String,
+    val productName: String,
     val warehouseCode: String,
     val locationCode: String,
     val actualQuantity: Long,
@@ -104,10 +105,12 @@ data class StocktakeCommand(
 
 data class AdjustmentCommand(
     val productCode: String,
+    val productName: String,
     val warehouseCode: String,
     val locationCode: String,
     val adjustQuantity: Long,
     val reasonCode: String,
+    val reasonName: String,
     val operatorCode: String,
     val deviceId: String? = null,
     val note: String? = null,

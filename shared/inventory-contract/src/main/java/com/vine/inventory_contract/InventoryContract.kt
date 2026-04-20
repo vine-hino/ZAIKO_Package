@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 enum class StockOperation {
     INBOUND,
     OUTBOUND,
+    ADJUST,
 }
 
 @Serializable
@@ -18,6 +19,8 @@ data class RegisterStockMovementRequest(
     val warehouseCode: String,
     val locationCode: String,
     val note: String? = null,
+    val adjustmentReasonCode: String? = null,
+    val adjustmentReasonName: String? = null,
 )
 
 @Serializable
@@ -32,6 +35,8 @@ data class StockMovementDto(
     val warehouseCode: String,
     val locationCode: String,
     val note: String? = null,
+    val adjustmentReasonCode: String? = null,
+    val adjustmentReasonName: String? = null,
     val occurredAt: String,
 )
 

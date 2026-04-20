@@ -23,6 +23,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "ENABLE_LOCAL_MASTER_SEED", "true")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -43,6 +46,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {

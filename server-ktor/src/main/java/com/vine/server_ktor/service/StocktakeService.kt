@@ -34,6 +34,7 @@ class StocktakeService(
                 when (movement.operation) {
                     StockOperation.INBOUND -> movement.quantity
                     StockOperation.OUTBOUND -> -movement.quantity
+                    StockOperation.ADJUST -> movement.quantity
                 }
             }
 
