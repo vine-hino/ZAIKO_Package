@@ -24,6 +24,26 @@ data class RegisterStockMovementRequest(
 )
 
 @Serializable
+data class RegisterStockMoveRequest(
+    val itemId: String,
+    val itemName: String,
+    val quantity: Long,
+    val operatorName: String,
+    val fromWarehouseCode: String,
+    val fromLocationCode: String,
+    val toWarehouseCode: String,
+    val toLocationCode: String,
+    val note: String? = null,
+)
+
+@Serializable
+data class CancelStockMovementRequest(
+    val operationUuid: String,
+    val operatorCode: String,
+    val note: String? = null,
+)
+
+@Serializable
 data class StockMovementDto(
     val id: String,
     val referenceNo: String,
@@ -43,6 +63,23 @@ data class StockMovementDto(
 @Serializable
 data class StockMovementListResponse(
     val movements: List<StockMovementDto>,
+)
+
+@Serializable
+data class StockMoveResult(
+    val accepted: Boolean,
+    val message: String,
+    val referenceNo: String,
+    val outboundMovementId: String,
+    val inboundMovementId: String,
+)
+
+@Serializable
+data class CancelStockMovementResult(
+    val accepted: Boolean,
+    val message: String,
+    val referenceNo: String? = null,
+    val operationUuid: String,
 )
 
 @Serializable
