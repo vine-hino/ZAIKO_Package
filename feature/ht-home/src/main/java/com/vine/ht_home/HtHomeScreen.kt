@@ -92,10 +92,10 @@ private fun HtHomeContent(
             .padding(padding)
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        HeaderPanel(
-            operatorName = uiState.operatorName,
-            warehouseName = uiState.warehouseName,
-        )
+//        HeaderPanel(
+//            operatorName = uiState.operatorName,
+//            warehouseName = uiState.warehouseName,
+//        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -142,50 +142,50 @@ private fun HtHomeContent(
     }
 }
 
-@Composable
-private fun HeaderPanel(
-    operatorName: String,
-    warehouseName: String,
-) {
-    val gradient = Brush.horizontalGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.primaryContainer,
-        ),
-    )
-
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        tonalElevation = 2.dp,
-        shadowElevation = 4.dp,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Box(
-            modifier = Modifier
-                .background(gradient)
-                .padding(16.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "在庫管理 HT",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = "本日作業を開始できます",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-                Text(
-                    text = "担当者: $operatorName / 倉庫: $warehouseName",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-            }
-        }
-    }
-}
+//@Composable
+//private fun HeaderPanel(
+//    operatorName: String,
+//    warehouseName: String,
+//) {
+//    val gradient = Brush.horizontalGradient(
+//        colors = listOf(
+//            MaterialTheme.colorScheme.primary,
+//            MaterialTheme.colorScheme.primaryContainer,
+//        ),
+//    )
+//
+//    Surface(
+//        shape = RoundedCornerShape(20.dp),
+//        tonalElevation = 2.dp,
+//        shadowElevation = 4.dp,
+//        modifier = Modifier.fillMaxWidth(),
+//    ) {
+//        Box(
+//            modifier = Modifier
+//                .background(gradient)
+//                .padding(16.dp),
+//        ) {
+//            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+//                Text(
+//                    text = "在庫管理 HT",
+//                    style = MaterialTheme.typography.headlineSmall,
+//                    color = MaterialTheme.colorScheme.onPrimary,
+//                    fontWeight = FontWeight.Bold,
+//                )
+//                Text(
+//                    text = "本日作業を開始できます",
+//                    style = MaterialTheme.typography.bodyMedium,
+//                    color = MaterialTheme.colorScheme.onPrimary,
+//                )
+//                Text(
+//                    text = "担当者: $operatorName / 倉庫: $warehouseName",
+//                    style = MaterialTheme.typography.bodySmall,
+//                    color = MaterialTheme.colorScheme.onPrimary,
+//                )
+//            }
+//        }
+//    }
+//}
 
 @Composable
 private fun SummaryRow(
