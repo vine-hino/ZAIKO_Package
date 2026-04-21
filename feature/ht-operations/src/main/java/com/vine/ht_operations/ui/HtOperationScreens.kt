@@ -70,7 +70,7 @@ fun HtStockListScreen(
 
             if (uiState.errorMessage != null) {
                 Text(
-                    text = uiState.errorMessage,
+                    text = uiState.errorMessage!!,
                     color = MaterialTheme.colorScheme.error,
                 )
             }
