@@ -27,7 +27,7 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.vine.pc_app.MainKt"
+        mainClass = "com.vine.pc_app.ui.MainKt"
 
         nativeDistributions {
             targetFormats(
