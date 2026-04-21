@@ -1,4 +1,4 @@
-package com.vine.connector_db
+package com.vine.connector_db.gateway
 
 import com.vine.connector_api.AdjustmentCommand
 import com.vine.connector_api.CancelOperationCommand
@@ -14,6 +14,15 @@ import com.vine.connector_api.StockItem
 import com.vine.connector_api.StockQuery
 import com.vine.connector_api.StocktakeCommand
 import com.vine.connector_api.SubmitResult
+import com.vine.connector_db.client.AdjustmentServerClient
+import com.vine.connector_db.client.CancelServerClient
+import com.vine.connector_db.client.InboundServerClient
+import com.vine.connector_db.client.MasterServerClient
+import com.vine.connector_db.client.MoveServerClient
+import com.vine.connector_db.client.OutboundServerClient
+import com.vine.connector_db.client.StockBalanceServerClient
+import com.vine.connector_db.client.StockHistoryServerClient
+import com.vine.connector_db.client.StocktakeServerClient
 import com.vine.inventory_contract.ConfirmStocktakeCommand
 import com.vine.inventory_contract.GetStocktakeDetailsQuery
 import com.vine.inventory_contract.GetStocktakeSummariesQuery

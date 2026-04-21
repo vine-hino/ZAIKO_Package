@@ -1,4 +1,4 @@
-package com.vine.connector_db
+package com.vine.connector_db.client
 
 import com.vine.connector_api.StockItem
 import com.vine.connector_api.StockQuery

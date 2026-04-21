@@ -1,6 +1,7 @@
-package com.vine.connector_db
+package com.vine.connector_db.di
 
 import com.vine.connector_api.MasterReferenceGateway
+import com.vine.connector_db.gateway.ServerMasterReferenceGateway
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

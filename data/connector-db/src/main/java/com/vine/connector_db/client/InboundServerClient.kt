@@ -1,8 +1,9 @@
-package com.vine.connector_db
+package com.vine.connector_db.client
 
 import com.vine.connector_api.SubmitResult
-import com.vine.inventory_contract.RegisterStockMoveRequest
-import com.vine.inventory_contract.StockMoveResult
+import com.vine.inventory_contract.RegisterStockMovementRequest
+import com.vine.inventory_contract.StockMovementDto
+import com.vine.inventory_contract.StockOperation
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -14,44 +15,41 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
-class MoveServerClient @Inject constructor(
+class InboundServerClient @Inject constructor(
     private val client: HttpClient,
     @Named("serverBaseUrl") private val baseUrl: String,
 ) {
-    suspend fun registerMove(
+    suspend fun registerInbound(
         productCode: String,
         productName: String,
-        fromWarehouseCode: String,
-        fromLocationCode: String,
-        toWarehouseCode: String,
-        toLocationCode: String,
+        warehouseCode: String,
+        locationCode: String,
         quantity: Long,
         operatorCode: String,
         note: String?,
     ): SubmitResult {
         return runCatching {
-            val response = client.post("$baseUrl/inventory/moves") {
+            val response = client.post("$baseUrl/inventory/movements") {
                 contentType(ContentType.Application.Json)
                 setBody(
-                    RegisterStockMoveRequest(
+                    RegisterStockMovementRequest(
                         itemId = productCode,
                         itemName = productName,
                         quantity = quantity,
+                        operation = StockOperation.INBOUND,
                         operatorName = operatorCode,
-                        fromWarehouseCode = fromWarehouseCode,
-                        fromLocationCode = fromLocationCode,
-                        toWarehouseCode = toWarehouseCode,
-                        toLocationCode = toLocationCode,
+                        warehouseCode = warehouseCode,
+                        locationCode = locationCode,
                         note = note,
                     )
                 )
-            }.body<StockMoveResult>()
+            }.body<StockMovementDto>()
 
             SubmitResult(
-                accepted = response.accepted,
-                message = response.message,
+                accepted = true,
+                message = "入庫をサーバーへ登録しました",
                 referenceId = response.referenceNo,
-                operationUuid = response.outboundMovementId,
+                operationUuid = response.id,
             )
         }.getOrElse { error ->
             SubmitResult(

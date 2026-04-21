@@ -1,4 +1,4 @@
-package com.vine.connector_db
+package com.vine.connector_db.client
 
 import com.vine.connector_api.SubmitResult
 import com.vine.inventory_contract.RegisterStockMovementRequest
@@ -15,11 +15,11 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
-class InboundServerClient @Inject constructor(
+class OutboundServerClient @Inject constructor(
     private val client: HttpClient,
     @Named("serverBaseUrl") private val baseUrl: String,
 ) {
-    suspend fun registerInbound(
+    suspend fun registerOutbound(
         productCode: String,
         productName: String,
         warehouseCode: String,
@@ -36,7 +36,7 @@ class InboundServerClient @Inject constructor(
                         itemId = productCode,
                         itemName = productName,
                         quantity = quantity,
-                        operation = StockOperation.INBOUND,
+                        operation = StockOperation.OUTBOUND,
                         operatorName = operatorCode,
                         warehouseCode = warehouseCode,
                         locationCode = locationCode,
@@ -47,7 +47,7 @@ class InboundServerClient @Inject constructor(
 
             SubmitResult(
                 accepted = true,
-                message = "入庫をサーバーへ登録しました",
+                message = "出庫をサーバーへ登録しました",
                 referenceId = response.referenceNo,
                 operationUuid = response.id,
             )
