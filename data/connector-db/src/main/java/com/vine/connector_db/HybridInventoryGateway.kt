@@ -5,6 +5,7 @@ import com.vine.connector_api.CancelOperationCommand
 import com.vine.connector_api.ConnectionType
 import com.vine.connector_api.InboundCommand
 import com.vine.connector_api.InventoryGateway
+import com.vine.connector_api.MasterLookupItem
 import com.vine.connector_api.MoveCommand
 import com.vine.connector_api.OutboundCommand
 import com.vine.connector_api.StockHistoryItem
@@ -13,7 +14,7 @@ import com.vine.connector_api.StockItem
 import com.vine.connector_api.StockQuery
 import com.vine.connector_api.StocktakeCommand
 import com.vine.connector_api.SubmitResult
-import com.vine.database.ZaikoDatabase
+import com.vine.inventory_contract.ConfirmStocktakeCommand
 import com.vine.inventory_contract.GetStocktakeDetailsQuery
 import com.vine.inventory_contract.GetStocktakeSummariesQuery
 import com.vine.inventory_contract.StocktakeDetail
@@ -23,17 +24,16 @@ import javax.inject.Singleton
 
 @Singleton
 class HybridInventoryGateway @Inject constructor(
-    private val localGateway: DbInventoryGateway,
     private val inboundServerClient: InboundServerClient,
     private val outboundServerClient: OutboundServerClient,
     private val moveServerClient: MoveServerClient,
     private val stockBalanceServerClient: StockBalanceServerClient,
     private val stockHistoryServerClient: StockHistoryServerClient,
+    private val masterServerClient: MasterServerClient,
     private val cancelServerClient: CancelServerClient,
     private val adjustmentServerClient: AdjustmentServerClient,
     private val stocktakeServerClient: StocktakeServerClient,
-    private val database: ZaikoDatabase,
-) : InventoryGateway by localGateway {
+) : InventoryGateway {
 
     override fun currentConnectionType(): ConnectionType = ConnectionType.CLOUD
 
@@ -122,8 +122,30 @@ class HybridInventoryGateway @Inject constructor(
         return stocktakeServerClient.getDetails(query)
     }
 
+    override suspend fun confirmStocktake(command: ConfirmStocktakeCommand): SubmitResult {
+        return stocktakeServerClient.confirmStocktake(command)
+    }
+
     override suspend fun cancelOperation(command: CancelOperationCommand): SubmitResult {
         return cancelServerClient.cancel(command)
+    }
+
+    override suspend fun getUnsyncedCount(): Int = 0
+
+    override suspend fun searchMasters(
+        type: String,
+        keyword: String?,
+        includeInactive: Boolean,
+        limit: Int,
+    ): List<MasterLookupItem> {
+        return runCatching {
+            masterServerClient.searchMasters(
+                type = type,
+                keyword = keyword,
+                includeInactive = includeInactive,
+                limit = limit,
+            )
+        }.getOrDefault(emptyList())
     }
 
     override suspend fun exportInboundToJson(

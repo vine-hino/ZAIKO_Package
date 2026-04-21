@@ -24,7 +24,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("boolean", "ENABLE_LOCAL_MASTER_SEED", "true")
+            // No local Room master seeding in cloud-first mode.
         }
         release {
             isMinifyEnabled = false
