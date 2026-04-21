@@ -76,6 +76,7 @@ data class OutboundCommand(
 
 data class MoveCommand(
     val productCode: String,
+    val productName: String,
     val fromWarehouseCode: String,
     val fromLocationCode: String,
     val toWarehouseCode: String,
