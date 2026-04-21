@@ -70,8 +70,6 @@ fun PcDashboardScreen(
     onOpenInbound: () -> Unit,
     onOpenOutbound: () -> Unit,
     onOpenStocktake: () -> Unit,
-    onOpenMove: () -> Unit,
-    onOpenAdjustment: () -> Unit,
     onOpenStock: () -> Unit,
     onOpenMaster: () -> Unit,
     onOpenSync: () -> Unit,
@@ -204,8 +202,6 @@ fun PcDashboardScreen(
                             DashboardActionItem("入庫", "入庫一覧・検索・確認", onOpenInbound),
                             DashboardActionItem("出庫", "出庫一覧・検索・確認", onOpenOutbound),
                             DashboardActionItem("棚卸", "棚卸ドラフト・差異確認", onOpenStocktake),
-                            DashboardActionItem("移動", "ロケーション・倉庫間移動", onOpenMove),
-                            DashboardActionItem("在庫調整", "差異・補正登録", onOpenAdjustment),
                             DashboardActionItem("在庫照会", "商品・倉庫・履歴照会", onOpenStock),
                         )
                     )

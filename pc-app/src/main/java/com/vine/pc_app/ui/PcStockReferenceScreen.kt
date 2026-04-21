@@ -2,7 +2,9 @@ package com.vine.pc_app.ui
 import com.vine.pc_app.data.PcDependencies
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -67,7 +69,10 @@ data class StockReferenceSearchCondition(
 )
 
 @Composable
-fun PcStockReferenceScreen() {
+fun PcStockReferenceScreen(
+    onOpenAdjustment: (StockReferenceRowModel) -> Unit = {},
+    adjustmentContent: (@Composable () -> Unit)? = null,
+) {
     var allRows by remember { mutableStateOf<List<StockReferenceRowModel>>(emptyList()) }
     var loadError by remember { mutableStateOf<String?>(null) }
 
@@ -101,6 +106,8 @@ fun PcStockReferenceScreen() {
         allRows = allRows,
         loadError = loadError,
         onReload = { kotlinx.coroutines.runBlocking { reload() } },
+        onRowSelected = onOpenAdjustment,
+        adjustmentContent = adjustmentContent,
     )
 }
 
@@ -109,6 +116,8 @@ fun StockReferenceScreen(
     allRows: List<StockReferenceRowModel>,
     loadError: String?,
     onReload: () -> Unit,
+    onRowSelected: (StockReferenceRowModel) -> Unit,
+    adjustmentContent: (@Composable () -> Unit)? = null,
 ) {
     var draftCondition by remember {
         mutableStateOf(StockReferenceSearchCondition())
@@ -272,62 +281,91 @@ fun StockReferenceScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OperationResultCard {
+            if (adjustmentContent == null) {
+                StockReferenceResultTable(
+                    rows = filteredRows,
+                    onRowSelected = onRowSelected,
+                )
+            } else {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(OperationTableHeaderBg)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    OperationHeaderCell("商品コード", weight = 1.1f)
-                    OperationHeaderCell("商品名", weight = 1.8f)
-                    OperationHeaderCell("倉庫", weight = 1.0f)
-                    OperationHeaderCell("ロケーション", weight = 1.15f)
-                    OperationHeaderCell("在庫数", weight = 0.8f)
-                    OperationHeaderCell("更新日時", weight = 1.25f)
-                }
-
-                Divider()
-
-                if (filteredRows.isEmpty()) {
-                    OperationEmptyState(
-                        title = "該当する在庫データがありません",
-                        description = "検索条件を変更して再度お試しください。"
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 4.dp)
-                    ) {
-                        itemsIndexed(filteredRows, key = { index, row ->
-                            "${row.productCode}_${row.warehouseName}_${row.locationName}_$index"
-                        }) { index, row ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        if (index % 2 == 0) OperationRowEvenBg else OperationRowOddBg
-                                    )
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                OperationBodyCell(row.productCode, weight = 1.1f)
-                                OperationBodyCell(row.productName, weight = 1.8f)
-                                OperationBodyCell(row.warehouseName, weight = 1.0f)
-                                OperationBodyCell(row.locationName, weight = 1.15f)
-                                OperationBodyCell(
-                                    operationQuantityFormatter.format(row.quantity),
-                                    weight = 0.8f
-                                )
-                                OperationBodyCell(
-                                    row.updatedAt.format(operationDateTimeFormatter),
-                                    weight = 1.25f
-                                )
-                            }
-                            Divider()
-                        }
+                    Column(modifier = Modifier.weight(1.15f)) {
+                        StockReferenceResultTable(
+                            rows = filteredRows,
+                            onRowSelected = onRowSelected,
+                        )
                     }
+                    Column(modifier = Modifier.weight(1f)) {
+                        adjustmentContent()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StockReferenceResultTable(
+    rows: List<StockReferenceRowModel>,
+    onRowSelected: (StockReferenceRowModel) -> Unit,
+) {
+    OperationResultCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(OperationTableHeaderBg)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OperationHeaderCell("商品コード", weight = 1.1f)
+            OperationHeaderCell("商品名", weight = 1.8f)
+            OperationHeaderCell("倉庫", weight = 1.0f)
+            OperationHeaderCell("ロケーション", weight = 1.15f)
+            OperationHeaderCell("在庫数", weight = 0.8f)
+            OperationHeaderCell("更新日時", weight = 1.25f)
+        }
+
+        Divider()
+
+        if (rows.isEmpty()) {
+            OperationEmptyState(
+                title = "該当する在庫データがありません",
+                description = "検索条件を変更して再度お試しください。"
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                itemsIndexed(rows, key = { index, row ->
+                    "${row.productCode}_${row.warehouseName}_${row.locationName}_$index"
+                }) { index, row ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onRowSelected(row) }
+                            .background(
+                                if (index % 2 == 0) OperationRowEvenBg else OperationRowOddBg
+                            )
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OperationBodyCell(row.productCode, weight = 1.1f)
+                        OperationBodyCell(row.productName, weight = 1.8f)
+                        OperationBodyCell(row.warehouseName, weight = 1.0f)
+                        OperationBodyCell(row.locationName, weight = 1.15f)
+                        OperationBodyCell(
+                            operationQuantityFormatter.format(row.quantity),
+                            weight = 0.8f
+                        )
+                        OperationBodyCell(
+                            row.updatedAt.format(operationDateTimeFormatter),
+                            weight = 1.25f
+                        )
+                    }
+                    Divider()
                 }
             }
         }
