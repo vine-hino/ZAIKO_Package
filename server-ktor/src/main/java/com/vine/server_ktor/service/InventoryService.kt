@@ -1,8 +1,10 @@
 package com.vine.server_ktor.service
 
 import com.vine.inventory_contract.RegisterStockMovementRequest
+import com.vine.inventory_contract.RegisterStockMoveRequest
 import com.vine.inventory_contract.RealtimeStockMessage
 import com.vine.inventory_contract.StockBalanceDto
+import com.vine.inventory_contract.StockMoveResult
 import com.vine.inventory_contract.StockMovementDto
 import com.vine.inventory_contract.StockOperation
 import com.vine.inventory_contract.StockSummaryDto
@@ -60,6 +62,73 @@ class InventoryService(
         )
 
         return movement
+    }
+
+    suspend fun registerMove(request: RegisterStockMoveRequest): StockMoveResult {
+        require(request.quantity > 0) {
+            "quantity must be greater than 0"
+        }
+        require(
+            request.fromWarehouseCode != request.toWarehouseCode ||
+                    request.fromLocationCode != request.toLocationCode
+        ) {
+            "from and to location must be different"
+        }
+
+        val now = Instant.now()
+        val referenceNo = createMoveReferenceNo(now)
+
+        val outboundMovement = StockMovementDto(
+            id = UUID.randomUUID().toString(),
+            referenceNo = referenceNo,
+            itemId = request.itemId,
+            itemName = request.itemName,
+            quantity = request.quantity,
+            operation = StockOperation.OUTBOUND,
+            operatorName = request.operatorName,
+            warehouseCode = request.fromWarehouseCode,
+            locationCode = request.fromLocationCode,
+            note = request.note,
+            occurredAt = now.toString(),
+        )
+
+        val inboundMovement = StockMovementDto(
+            id = UUID.randomUUID().toString(),
+            referenceNo = referenceNo,
+            itemId = request.itemId,
+            itemName = request.itemName,
+            quantity = request.quantity,
+            operation = StockOperation.INBOUND,
+            operatorName = request.operatorName,
+            warehouseCode = request.toWarehouseCode,
+            locationCode = request.toLocationCode,
+            note = request.note,
+            occurredAt = now.toString(),
+        )
+
+        repository.save(outboundMovement)
+        repository.save(inboundMovement)
+
+        broadcaster.broadcast(
+            RealtimeStockMessage(
+                type = "stock_move_registered",
+                movement = outboundMovement,
+            )
+        )
+        broadcaster.broadcast(
+            RealtimeStockMessage(
+                type = "stock_move_registered",
+                movement = inboundMovement,
+            )
+        )
+
+        return StockMoveResult(
+            accepted = true,
+            message = "移動をサーバーへ登録しました",
+            referenceNo = referenceNo,
+            outboundMovementId = outboundMovement.id,
+            inboundMovementId = inboundMovement.id,
+        )
     }
 
     suspend fun getMovements(): List<StockMovementDto> {
@@ -149,6 +218,15 @@ class InventoryService(
         val suffix = UUID.randomUUID().toString().take(8).uppercase()
 
         return "$prefix-$timestamp-$suffix"
+    }
+
+    private fun createMoveReferenceNo(now: Instant): String {
+        val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+            .withZone(ZoneId.systemDefault())
+            .format(now)
+
+        val suffix = UUID.randomUUID().toString().take(8).uppercase()
+        return "MOV-$timestamp-$suffix"
     }
 
     private data class BalanceKey(
