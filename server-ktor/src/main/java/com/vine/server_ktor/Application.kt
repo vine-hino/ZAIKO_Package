@@ -21,8 +21,6 @@ import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import kotlinx.serialization.json.Json
 import com.vine.connector_api.MasterLookupItem
-import com.vine.inventory_contract.GetMasterRecordsQuery
-import com.vine.inventory_contract.MasterType
 import io.ktor.http.HttpStatusCode
 import com.vine.server_ktor.repository.ServerPostgresMasterRepository
 
