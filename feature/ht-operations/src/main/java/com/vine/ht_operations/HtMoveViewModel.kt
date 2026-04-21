@@ -86,6 +86,7 @@ class HtMoveViewModel @Inject constructor(
             val result = inventoryGateway.registerMove(
                 MoveCommand(
                     productCode = current.productCode,
+                    productName = current.productCode,
                     fromWarehouseCode = DEFAULT_WAREHOUSE_CODE,
                     fromLocationCode = current.fromLocationCode,
                     toWarehouseCode = DEFAULT_WAREHOUSE_CODE,
