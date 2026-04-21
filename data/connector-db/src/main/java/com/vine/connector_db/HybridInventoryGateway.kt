@@ -13,6 +13,10 @@ import com.vine.connector_api.StockQuery
 import com.vine.connector_api.StocktakeCommand
 import com.vine.connector_api.SubmitResult
 import com.vine.database.ZaikoDatabase
+import com.vine.inventory_contract.GetStocktakeDetailsQuery
+import com.vine.inventory_contract.GetStocktakeSummariesQuery
+import com.vine.inventory_contract.StocktakeDetail
+import com.vine.inventory_contract.StocktakeSummary
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -102,6 +106,18 @@ class HybridInventoryGateway @Inject constructor(
 
     override suspend fun getStockHistory(query: StockHistoryQuery): List<StockHistoryItem> {
         return stockHistoryServerClient.getStockHistory(query)
+    }
+
+    override suspend fun getStocktakeSummaries(
+        query: GetStocktakeSummariesQuery,
+    ): List<StocktakeSummary> {
+        return stocktakeServerClient.getDrafts(query)
+    }
+
+    override suspend fun getStocktakeDetails(
+        query: GetStocktakeDetailsQuery,
+    ): List<StocktakeDetail> {
+        return stocktakeServerClient.getDetails(query)
     }
 
     override suspend fun exportInboundToJson(
