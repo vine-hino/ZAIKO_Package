@@ -3,6 +3,8 @@ package com.vine.ht_operations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vine.connector_api.InventoryGateway
+import com.vine.connector_api.MasterReferenceGateway
+import com.vine.connector_api.MasterType
 import com.vine.connector_api.MoveCommand
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -25,6 +27,7 @@ data class HtMoveUiState(
 @HiltViewModel
 class HtMoveViewModel @Inject constructor(
     private val inventoryGateway: InventoryGateway,
+    private val masterReferenceGateway: MasterReferenceGateway,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HtMoveUiState())
@@ -83,10 +86,22 @@ class HtMoveViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
 
+            val resolvedProductName = runCatching {
+                masterReferenceGateway.search(
+                    type = MasterType.PRODUCT,
+                    query = current.productCode,
+                    limit = 1,
+                    includeInactive = false,
+                )
+            }.getOrDefault(emptyList())
+                .firstOrNull { it.code.equals(current.productCode, ignoreCase = true) }
+                ?.name
+                ?: current.productCode
+
             val result = inventoryGateway.registerMove(
                 MoveCommand(
                     productCode = current.productCode,
-                    productName = current.productCode,
+                    productName = resolvedProductName,
                     fromWarehouseCode = DEFAULT_WAREHOUSE_CODE,
                     fromLocationCode = current.fromLocationCode,
                     toWarehouseCode = DEFAULT_WAREHOUSE_CODE,
