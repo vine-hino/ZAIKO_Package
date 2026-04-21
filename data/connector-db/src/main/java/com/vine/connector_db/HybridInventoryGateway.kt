@@ -1,6 +1,7 @@
 package com.vine.connector_db
 
 import com.vine.connector_api.AdjustmentCommand
+import com.vine.connector_api.CancelOperationCommand
 import com.vine.connector_api.ConnectionType
 import com.vine.connector_api.InboundCommand
 import com.vine.connector_api.InventoryGateway
@@ -28,6 +29,7 @@ class HybridInventoryGateway @Inject constructor(
     private val moveServerClient: MoveServerClient,
     private val stockBalanceServerClient: StockBalanceServerClient,
     private val stockHistoryServerClient: StockHistoryServerClient,
+    private val cancelServerClient: CancelServerClient,
     private val adjustmentServerClient: AdjustmentServerClient,
     private val stocktakeServerClient: StocktakeServerClient,
     private val database: ZaikoDatabase,
@@ -118,6 +120,10 @@ class HybridInventoryGateway @Inject constructor(
         query: GetStocktakeDetailsQuery,
     ): List<StocktakeDetail> {
         return stocktakeServerClient.getDetails(query)
+    }
+
+    override suspend fun cancelOperation(command: CancelOperationCommand): SubmitResult {
+        return cancelServerClient.cancel(command)
     }
 
     override suspend fun exportInboundToJson(

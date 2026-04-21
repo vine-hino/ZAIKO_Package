@@ -2,6 +2,7 @@ package com.vine.server_ktor.routes
 
 import com.vine.inventory_contract.RegisterStockMovementRequest
 import com.vine.inventory_contract.RegisterStockMoveRequest
+import com.vine.inventory_contract.CancelStockMovementRequest
 import com.vine.inventory_contract.StockBalanceListResponse
 import com.vine.inventory_contract.StockMovementListResponse
 import com.vine.inventory_contract.StockSummaryListResponse
@@ -44,6 +45,13 @@ fun Route.inventoryRoutes(service: InventoryService) {
             val request = call.receive<RegisterStockMoveRequest>()
             val created = service.registerMove(request)
             call.respond(HttpStatusCode.Created, created)
+        }
+
+        post("/cancel") {
+            val request = call.receive<CancelStockMovementRequest>()
+            val result = service.cancel(request)
+            val status = if (result.accepted) HttpStatusCode.Created else HttpStatusCode.NotFound
+            call.respond(status, result)
         }
     }
 
