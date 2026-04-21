@@ -50,6 +50,45 @@ class HtAdjustmentViewModel @Inject constructor(
     private var productSearchJob: Job? = null
     private var locationSearchJob: Job? = null
     private var reasonSearchJob: Job? = null
+    private var initialTargetApplied = false
+
+    fun setInitialTarget(
+        productCode: String?,
+        locationCode: String?,
+    ) {
+        if (initialTargetApplied || (productCode.isNullOrBlank() && locationCode.isNullOrBlank())) {
+            return
+        }
+        initialTargetApplied = true
+
+        viewModelScope.launch {
+            productCode?.takeIf { it.isNotBlank() }?.let { code ->
+                runCatching {
+                    masterReferenceGateway.search(
+                        type = MasterType.PRODUCT,
+                        query = code,
+                        limit = 20,
+                        includeInactive = false,
+                    )
+                }.getOrNull()
+                    ?.firstOrNull { it.code == code }
+                    ?.let { item -> selectProduct(item) }
+            }
+
+            locationCode?.takeIf { it.isNotBlank() }?.let { code ->
+                runCatching {
+                    masterReferenceGateway.search(
+                        type = MasterType.LOCATION,
+                        query = code,
+                        limit = 20,
+                        includeInactive = false,
+                    )
+                }.getOrNull()
+                    ?.firstOrNull { it.code == code }
+                    ?.let { item -> selectLocation(item) }
+            }
+        }
+    }
 
     fun onProductQueryChanged(value: String) {
         productLookup = productLookup.copy(

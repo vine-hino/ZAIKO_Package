@@ -10,9 +10,11 @@ object ZaikoRoute {
     const val HT_STOCK_HISTORY = "ht/stock/history"
     const val HT_INBOUND = "ht/inbound"
     const val HT_OUTBOUND = "ht/outbound"
-    const val HT_MOVE = "ht/move"
     const val HT_STOCKTAKE = "ht/stocktake"
-    const val HT_ADJUSTMENT = "ht/adjustment"
+    const val HT_ADJUSTMENT_BASE = "ht/adjustment"
+    const val HT_ADJUSTMENT_PRODUCT_ARG = "productCode"
+    const val HT_ADJUSTMENT_LOCATION_ARG = "locationCode"
+    const val HT_ADJUSTMENT = "$HT_ADJUSTMENT_BASE?${HT_ADJUSTMENT_PRODUCT_ARG}={${HT_ADJUSTMENT_PRODUCT_ARG}}&${HT_ADJUSTMENT_LOCATION_ARG}={${HT_ADJUSTMENT_LOCATION_ARG}}"
 
     const val PREPARING_LABEL_ARG = "label"
     const val HT_PREPARING = "ht/preparing/{$PREPARING_LABEL_ARG}"
@@ -26,5 +28,14 @@ object ZaikoRoute {
 
     fun htResult(message: String): String {
         return "ht/result/${Uri.encode(message)}"
+    }
+
+    fun htAdjustment(
+        productCode: String? = null,
+        locationCode: String? = null,
+    ): String {
+        val product = Uri.encode(productCode.orEmpty())
+        val location = Uri.encode(locationCode.orEmpty())
+        return "$HT_ADJUSTMENT_BASE?$HT_ADJUSTMENT_PRODUCT_ARG=$product&$HT_ADJUSTMENT_LOCATION_ARG=$location"
     }
 }

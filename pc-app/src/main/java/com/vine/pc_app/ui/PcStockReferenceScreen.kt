@@ -67,7 +67,9 @@ data class StockReferenceSearchCondition(
 )
 
 @Composable
-fun PcStockReferenceScreen() {
+fun PcStockReferenceScreen(
+    onOpenAdjustment: (StockReferenceRowModel) -> Unit = {},
+) {
     var allRows by remember { mutableStateOf<List<StockReferenceRowModel>>(emptyList()) }
     var loadError by remember { mutableStateOf<String?>(null) }
 
@@ -101,6 +103,7 @@ fun PcStockReferenceScreen() {
         allRows = allRows,
         loadError = loadError,
         onReload = { kotlinx.coroutines.runBlocking { reload() } },
+        onRowSelected = onOpenAdjustment,
     )
 }
 
@@ -109,6 +112,7 @@ fun StockReferenceScreen(
     allRows: List<StockReferenceRowModel>,
     loadError: String?,
     onReload: () -> Unit,
+    onRowSelected: (StockReferenceRowModel) -> Unit,
 ) {
     var draftCondition by remember {
         mutableStateOf(StockReferenceSearchCondition())
@@ -272,62 +276,84 @@ fun StockReferenceScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OperationResultCard {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(OperationTableHeaderBg)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OperationHeaderCell("商品コード", weight = 1.1f)
-                    OperationHeaderCell("商品名", weight = 1.8f)
-                    OperationHeaderCell("倉庫", weight = 1.0f)
-                    OperationHeaderCell("ロケーション", weight = 1.15f)
-                    OperationHeaderCell("在庫数", weight = 0.8f)
-                    OperationHeaderCell("更新日時", weight = 1.25f)
-                }
+            StockReferenceResultTable(
+                rows = filteredRows,
+                onRowSelected = onRowSelected,
+            )
+        }
+    }
+}
 
-                Divider()
+@Composable
+private fun StockReferenceResultTable(
+    rows: List<StockReferenceRowModel>,
+    onRowSelected: (StockReferenceRowModel) -> Unit,
+) {
+    OperationResultCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(OperationTableHeaderBg)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OperationHeaderCell("商品コード", weight = 1.1f)
+            OperationHeaderCell("商品名", weight = 1.8f)
+            OperationHeaderCell("倉庫", weight = 1.0f)
+            OperationHeaderCell("ロケーション", weight = 1.15f)
+            OperationHeaderCell("在庫数", weight = 0.8f)
+            OperationHeaderCell("更新日時", weight = 1.25f)
+            OperationHeaderCell("操作", weight = 0.8f)
+        }
 
-                if (filteredRows.isEmpty()) {
-                    OperationEmptyState(
-                        title = "該当する在庫データがありません",
-                        description = "検索条件を変更して再度お試しください。"
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 4.dp)
+        Divider()
+
+        if (rows.isEmpty()) {
+            OperationEmptyState(
+                title = "該当する在庫データがありません",
+                description = "検索条件を変更して再度お試しください。"
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                itemsIndexed(rows, key = { index, row ->
+                    "${row.productCode}_${row.warehouseName}_${row.locationName}_$index"
+                }) { index, row ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                if (index % 2 == 0) OperationRowEvenBg else OperationRowOddBg
+                            )
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        itemsIndexed(filteredRows, key = { index, row ->
-                            "${row.productCode}_${row.warehouseName}_${row.locationName}_$index"
-                        }) { index, row ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        if (index % 2 == 0) OperationRowEvenBg else OperationRowOddBg
-                                    )
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                        OperationBodyCell(row.productCode, weight = 1.1f)
+                        OperationBodyCell(row.productName, weight = 1.8f)
+                        OperationBodyCell(row.warehouseName, weight = 1.0f)
+                        OperationBodyCell(row.locationName, weight = 1.15f)
+                        OperationBodyCell(
+                            operationQuantityFormatter.format(row.quantity),
+                            weight = 0.8f
+                        )
+                        OperationBodyCell(
+                            row.updatedAt.format(operationDateTimeFormatter),
+                            weight = 1.25f
+                        )
+                        Box(
+                            modifier = Modifier.weight(0.8f),
+                            contentAlignment = Alignment.CenterEnd,
+                        ) {
+                            TextButton(
+                                onClick = { onRowSelected(row) },
                             ) {
-                                OperationBodyCell(row.productCode, weight = 1.1f)
-                                OperationBodyCell(row.productName, weight = 1.8f)
-                                OperationBodyCell(row.warehouseName, weight = 1.0f)
-                                OperationBodyCell(row.locationName, weight = 1.15f)
-                                OperationBodyCell(
-                                    operationQuantityFormatter.format(row.quantity),
-                                    weight = 0.8f
-                                )
-                                OperationBodyCell(
-                                    row.updatedAt.format(operationDateTimeFormatter),
-                                    weight = 1.25f
-                                )
+                                Text("詳細")
                             }
-                            Divider()
                         }
                     }
+                    Divider()
                 }
             }
         }

@@ -67,7 +67,11 @@ data class AdjustmentHistoryRowModel(
 )
 
 @Composable
-fun PcAdjustmentManagementScreen() {
+fun PcAdjustmentManagementScreen(
+    initialProductCode: String? = null,
+    initialWarehouseCode: String? = null,
+    initialLocationCode: String? = null,
+) {
     var products by remember { mutableStateOf<List<PcMasterLookupItem>>(emptyList()) }
     var locations by remember { mutableStateOf<List<PcMasterLookupItem>>(emptyList()) }
     var reasons by remember { mutableStateOf<List<PcMasterLookupItem>>(emptyList()) }
@@ -145,6 +149,19 @@ fun PcAdjustmentManagementScreen() {
                     .thenBy { it.code }
             )
             reasons = reasonRows.sortedBy { it.code }
+            if (!initialProductCode.isNullOrBlank() && selectedProductLabel.isBlank()) {
+                products.firstOrNull { it.code == initialProductCode }?.let { product ->
+                    selectedProductLabel = product.toProductLabel()
+                }
+            }
+            if (!initialLocationCode.isNullOrBlank() && selectedLocationLabel.isBlank()) {
+                locations.firstOrNull { location ->
+                    location.code == initialLocationCode &&
+                            (initialWarehouseCode.isNullOrBlank() || location.warehouseCode == initialWarehouseCode)
+                }?.let { location ->
+                    selectedLocationLabel = location.toLocationLabel()
+                }
+            }
             errorMessage = null
         }.onFailure { e ->
             errorMessage = e.message ?: "調整用マスタの取得に失敗しました"
