@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vine.connector_api.HomeDashboardGateway
 import com.vine.connector_api.HomeDashboardSummary
-import com.vine.database.ZaikoDatabase
+import com.vine.connector_api.InventoryGateway
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,17 +16,17 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class HtHomeViewModel @Inject constructor(
-    database: ZaikoDatabase,
     private val homeDashboardGateway: HomeDashboardGateway,
+    private val inventoryGateway: InventoryGateway,
 ) : ViewModel() {
 
-    private val syncQueueDao = database.syncQueueDao()
     private val summaryState = MutableStateFlow(HomeDashboardSummary())
+    private val unsyncedCountState = MutableStateFlow(0)
     private val isLoadingState = MutableStateFlow(false)
 
     val uiState: StateFlow<HtHomeUiState> = combine(
         summaryState,
-        syncQueueDao.observeUnsyncedCount(),
+        unsyncedCountState,
         isLoadingState,
     ) { summary, unsyncedCount, isLoading ->
         HtHomeUiState(
@@ -54,6 +54,11 @@ class HtHomeViewModel @Inject constructor(
                 homeDashboardGateway.getSummary()
             }.onSuccess { summary ->
                 summaryState.value = summary
+            }
+            runCatching {
+                inventoryGateway.getUnsyncedCount()
+            }.onSuccess { unsyncedCount ->
+                unsyncedCountState.value = unsyncedCount
             }
             isLoadingState.value = false
         }
