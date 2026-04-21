@@ -79,9 +79,7 @@ dependencies {
     implementation(project(":feature:ht-operations"))
 
     implementation(project(":data:connector-api"))
-    implementation(project(":data:connector-ftp"))
     implementation(project(":data:connector-db"))
-    implementation(project(":data:connector-cloud"))
     implementation(project(":core:database"))
 
     implementation(libs.androidx.core.ktx)

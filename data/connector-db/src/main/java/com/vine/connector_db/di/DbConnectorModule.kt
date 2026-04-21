@@ -1,7 +1,9 @@
-package com.vine.connector_db
+package com.vine.connector_db.di
 
 import com.vine.connector_api.HomeDashboardGateway
 import com.vine.connector_api.InventoryGateway
+import com.vine.connector_db.gateway.HybridInventoryGateway
+import com.vine.connector_db.gateway.ServerHomeDashboardGateway
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

@@ -1,4 +1,4 @@
-package com.vine.connector_db
+package com.vine.connector_db.client
 
 import com.vine.connector_api.StocktakeCommand
 import com.vine.connector_api.SubmitResult

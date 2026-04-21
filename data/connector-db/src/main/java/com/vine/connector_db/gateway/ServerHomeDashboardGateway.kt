@@ -1,4 +1,4 @@
-package com.vine.connector_db
+package com.vine.connector_db.gateway
 
 import com.vine.connector_api.HomeDashboardGateway
 import com.vine.connector_api.HomeDashboardSummary
