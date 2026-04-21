@@ -4,7 +4,10 @@ import com.vine.connector_api.AdjustmentCommand
 import com.vine.connector_api.ConnectionType
 import com.vine.connector_api.InboundCommand
 import com.vine.connector_api.InventoryGateway
+import com.vine.connector_api.MoveCommand
 import com.vine.connector_api.OutboundCommand
+import com.vine.connector_api.StockItem
+import com.vine.connector_api.StockQuery
 import com.vine.connector_api.StocktakeCommand
 import com.vine.connector_api.SubmitResult
 import com.vine.database.ZaikoDatabase
@@ -16,6 +19,8 @@ class HybridInventoryGateway @Inject constructor(
     private val localGateway: DbInventoryGateway,
     private val inboundServerClient: InboundServerClient,
     private val outboundServerClient: OutboundServerClient,
+    private val moveServerClient: MoveServerClient,
+    private val stockBalanceServerClient: StockBalanceServerClient,
     private val adjustmentServerClient: AdjustmentServerClient,
     private val stocktakeServerClient: StocktakeServerClient,
     private val database: ZaikoDatabase,
@@ -72,6 +77,24 @@ class HybridInventoryGateway @Inject constructor(
             operatorCode = command.operatorCode,
             note = command.note,
         )
+    }
+
+    override suspend fun registerMove(command: MoveCommand): SubmitResult {
+        return moveServerClient.registerMove(
+            productCode = command.productCode,
+            productName = command.productName,
+            fromWarehouseCode = command.fromWarehouseCode,
+            fromLocationCode = command.fromLocationCode,
+            toWarehouseCode = command.toWarehouseCode,
+            toLocationCode = command.toLocationCode,
+            quantity = command.quantity,
+            operatorCode = command.operatorCode,
+            note = command.note,
+        )
+    }
+
+    override suspend fun searchStock(query: StockQuery): List<StockItem> {
+        return stockBalanceServerClient.searchStock(query)
     }
 
     override suspend fun exportInboundToJson(
