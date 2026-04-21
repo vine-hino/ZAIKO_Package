@@ -1,4 +1,4 @@
-package com.vine.pc_app
+package com.vine.pc_app.domain
 
 enum class PcMenu(
     val title: String,

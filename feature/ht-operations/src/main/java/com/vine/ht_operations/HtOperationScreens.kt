@@ -1,4 +1,4 @@
-package com.vine.ht_operations
+package com.vine.ht_operations.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +24,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vine.designsystem.component.ZaikoScreenScaffold
+import com.vine.ht_operations.presentation.HtAdjustmentViewModel
+import com.vine.ht_operations.presentation.HtMoveViewModel
+import com.vine.ht_operations.presentation.HtStockHistoryViewModel
+import com.vine.ht_operations.presentation.HtStockListViewModel
+import com.vine.ht_operations.presentation.HtStocktakeViewModel
 
 @Composable
 fun HtStocktakeScreen(

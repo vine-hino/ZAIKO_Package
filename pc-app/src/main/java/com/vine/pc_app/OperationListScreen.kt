@@ -1,4 +1,4 @@
-package com.vine.pc_app
+package com.vine.pc_app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

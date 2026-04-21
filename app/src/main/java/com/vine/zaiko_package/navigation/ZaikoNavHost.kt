@@ -9,12 +9,12 @@ import androidx.navigation.navArgument
 import com.vine.navigation.ZaikoRoute
 import com.vine.auth.LoginRoute
 import com.vine.ht_home.HtHomeRoute
-import com.vine.ht_operations.HtAdjustmentScreen
-import com.vine.ht_operations.HtCompletedScreen
-import com.vine.ht_operations.HtInboundRoute
-import com.vine.ht_operations.HtOutboundRoute
-import com.vine.ht_operations.HtPreparingScreen
-import com.vine.ht_operations.HtStocktakeScreen
+import com.vine.ht_operations.ui.HtAdjustmentScreen
+import com.vine.ht_operations.ui.HtCompletedScreen
+import com.vine.ht_operations.ui.HtInboundRoute
+import com.vine.ht_operations.ui.HtOutboundRoute
+import com.vine.ht_operations.ui.HtPreparingScreen
+import com.vine.ht_operations.ui.HtStocktakeScreen
 
 @Composable
 fun ZaikoNavHost() {

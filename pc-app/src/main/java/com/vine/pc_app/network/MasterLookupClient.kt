@@ -1,4 +1,4 @@
-package com.vine.pc_app.network
+package com.vine.pc_app.data.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body

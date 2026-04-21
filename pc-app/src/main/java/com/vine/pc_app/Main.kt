@@ -1,4 +1,4 @@
-package com.vine.pc_app
+package com.vine.pc_app.ui
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application

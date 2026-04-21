@@ -1,4 +1,4 @@
-package com.vine.pc_app
+package com.vine.pc_app.domain
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
