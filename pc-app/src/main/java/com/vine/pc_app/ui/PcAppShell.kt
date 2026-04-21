@@ -67,15 +67,14 @@ fun PcAppShell() {
                     PcMenu.STOCK -> PcStockReferenceScreen(
                         onOpenAdjustment = { row ->
                             stockSelectedForAdjustment.value = row
-                            selectedMenu.value = PcMenu.STOCK
+                            selectedMenu.value = PcMenu.ADJUSTMENT
                         },
-                        adjustmentContent = {
-                            PcAdjustmentManagementScreen(
-                                initialProductCode = stockSelectedForAdjustment.value?.productCode,
-                                initialWarehouseCode = stockSelectedForAdjustment.value?.warehouseName,
-                                initialLocationCode = stockSelectedForAdjustment.value?.locationName,
-                            )
-                        },
+                    )
+
+                    PcMenu.ADJUSTMENT -> PcAdjustmentManagementScreen(
+                        initialProductCode = stockSelectedForAdjustment.value?.productCode,
+                        initialWarehouseCode = stockSelectedForAdjustment.value?.warehouseName,
+                        initialLocationCode = stockSelectedForAdjustment.value?.locationName,
                     )
 
                     PcMenu.MASTER -> PcMasterManagementScreen()

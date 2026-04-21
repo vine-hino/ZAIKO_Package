@@ -71,7 +71,6 @@ data class StockReferenceSearchCondition(
 @Composable
 fun PcStockReferenceScreen(
     onOpenAdjustment: (StockReferenceRowModel) -> Unit = {},
-    adjustmentContent: (@Composable () -> Unit)? = null,
 ) {
     var allRows by remember { mutableStateOf<List<StockReferenceRowModel>>(emptyList()) }
     var loadError by remember { mutableStateOf<String?>(null) }
@@ -107,7 +106,6 @@ fun PcStockReferenceScreen(
         loadError = loadError,
         onReload = { kotlinx.coroutines.runBlocking { reload() } },
         onRowSelected = onOpenAdjustment,
-        adjustmentContent = adjustmentContent,
     )
 }
 
@@ -117,7 +115,6 @@ fun StockReferenceScreen(
     loadError: String?,
     onReload: () -> Unit,
     onRowSelected: (StockReferenceRowModel) -> Unit,
-    adjustmentContent: (@Composable () -> Unit)? = null,
 ) {
     var draftCondition by remember {
         mutableStateOf(StockReferenceSearchCondition())
@@ -281,27 +278,10 @@ fun StockReferenceScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (adjustmentContent == null) {
-                StockReferenceResultTable(
-                    rows = filteredRows,
-                    onRowSelected = onRowSelected,
-                )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Column(modifier = Modifier.weight(1.15f)) {
-                        StockReferenceResultTable(
-                            rows = filteredRows,
-                            onRowSelected = onRowSelected,
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        adjustmentContent()
-                    }
-                }
-            }
+            StockReferenceResultTable(
+                rows = filteredRows,
+                onRowSelected = onRowSelected,
+            )
         }
     }
 }
@@ -325,6 +305,7 @@ private fun StockReferenceResultTable(
             OperationHeaderCell("ロケーション", weight = 1.15f)
             OperationHeaderCell("在庫数", weight = 0.8f)
             OperationHeaderCell("更新日時", weight = 1.25f)
+            OperationHeaderCell("操作", weight = 0.8f)
         }
 
         Divider()
@@ -345,7 +326,6 @@ private fun StockReferenceResultTable(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onRowSelected(row) }
                             .background(
                                 if (index % 2 == 0) OperationRowEvenBg else OperationRowOddBg
                             )
@@ -364,6 +344,16 @@ private fun StockReferenceResultTable(
                             row.updatedAt.format(operationDateTimeFormatter),
                             weight = 1.25f
                         )
+                        Box(
+                            modifier = Modifier.weight(0.8f),
+                            contentAlignment = Alignment.CenterEnd,
+                        ) {
+                            TextButton(
+                                onClick = { onRowSelected(row) },
+                            ) {
+                                Text("詳細")
+                            }
+                        }
                     }
                     Divider()
                 }

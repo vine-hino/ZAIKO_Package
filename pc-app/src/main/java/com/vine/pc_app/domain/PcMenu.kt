@@ -9,6 +9,7 @@ enum class PcMenu(
     INBOUND("入庫管理", "OPERATIONS"),
     OUTBOUND("出庫管理", "OPERATIONS"),
     STOCK("在庫照会", "INVENTORY"),
+    ADJUSTMENT("在庫調整", "INVENTORY"),
     MASTER("マスタ管理", "MASTER"),
     SYNC("同期管理", "SYSTEM"),
     SETTINGS("設定", "SYSTEM"),
