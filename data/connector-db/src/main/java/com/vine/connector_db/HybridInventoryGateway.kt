@@ -6,6 +6,8 @@ import com.vine.connector_api.InboundCommand
 import com.vine.connector_api.InventoryGateway
 import com.vine.connector_api.MoveCommand
 import com.vine.connector_api.OutboundCommand
+import com.vine.connector_api.StockHistoryItem
+import com.vine.connector_api.StockHistoryQuery
 import com.vine.connector_api.StockItem
 import com.vine.connector_api.StockQuery
 import com.vine.connector_api.StocktakeCommand
@@ -21,6 +23,7 @@ class HybridInventoryGateway @Inject constructor(
     private val outboundServerClient: OutboundServerClient,
     private val moveServerClient: MoveServerClient,
     private val stockBalanceServerClient: StockBalanceServerClient,
+    private val stockHistoryServerClient: StockHistoryServerClient,
     private val adjustmentServerClient: AdjustmentServerClient,
     private val stocktakeServerClient: StocktakeServerClient,
     private val database: ZaikoDatabase,
@@ -95,6 +98,10 @@ class HybridInventoryGateway @Inject constructor(
 
     override suspend fun searchStock(query: StockQuery): List<StockItem> {
         return stockBalanceServerClient.searchStock(query)
+    }
+
+    override suspend fun getStockHistory(query: StockHistoryQuery): List<StockHistoryItem> {
+        return stockHistoryServerClient.getStockHistory(query)
     }
 
     override suspend fun exportInboundToJson(
