@@ -2,10 +2,14 @@ package com.vine.connector_db
 
 import com.vine.connector_api.StocktakeCommand
 import com.vine.connector_api.SubmitResult
+import com.vine.inventory_contract.GetStocktakeDetailsQuery
+import com.vine.inventory_contract.GetStocktakeSummariesQuery
 import com.vine.inventory_contract.SaveStocktakeDraftRequest
+import com.vine.inventory_contract.StocktakeDetail
 import com.vine.inventory_contract.StocktakeSummary
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -19,6 +23,29 @@ class StocktakeServerClient @Inject constructor(
     private val client: HttpClient,
     @Named("serverBaseUrl") private val baseUrl: String,
 ) {
+    suspend fun getDrafts(
+        query: GetStocktakeSummariesQuery,
+    ): List<StocktakeSummary> {
+        val status = query.status?.takeIf { it.isNotBlank() } ?: "DRAFT"
+        val warehouseCode = query.warehouseCode?.takeIf { it.isNotBlank() }
+
+        return client.get("$baseUrl/stocktake/drafts")
+            .body<List<StocktakeSummary>>()
+            .asSequence()
+            .filter { it.status.equals(status, ignoreCase = true) }
+            .filter { warehouseCode == null || it.warehouseCode == warehouseCode }
+            .take(query.limit)
+            .toList()
+    }
+
+    suspend fun getDetails(
+        query: GetStocktakeDetailsQuery,
+    ): List<StocktakeDetail> {
+        return client.get(
+            "$baseUrl/stocktake/drafts/${query.operationUuid}/details?diffOnly=${query.diffOnly}"
+        ).body()
+    }
+
     suspend fun saveDraft(
         command: StocktakeCommand,
         productName: String,
