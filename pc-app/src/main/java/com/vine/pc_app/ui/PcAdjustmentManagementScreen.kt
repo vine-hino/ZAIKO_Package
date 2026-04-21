@@ -38,6 +38,18 @@ import com.vine.inventory_contract.RegisterStockMovementRequest
 import com.vine.inventory_contract.StockMovementDto
 import com.vine.inventory_contract.StockOperation
 import com.vine.pc_app.data.network.PcMasterLookupItem
+import com.vine.pc_app.domain.OperationEmptyState
+import com.vine.pc_app.domain.OperationHeaderCard
+import com.vine.pc_app.domain.OperationPageBg
+import com.vine.pc_app.domain.OperationResultCard
+import com.vine.pc_app.domain.OperationSearchCard
+import com.vine.pc_app.domain.SimpleDropdownField
+import com.vine.pc_app.domain.SummaryCountBg
+import com.vine.pc_app.domain.SummaryMetricCard
+import com.vine.pc_app.domain.SummaryQtyBg
+import com.vine.pc_app.domain.SummaryWarehouseBg
+import com.vine.pc_app.domain.operationDateTimeFormatter
+import com.vine.pc_app.domain.operationQuantityFormatter
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 
@@ -506,17 +518,17 @@ private fun RowScope.AdjustmentBodyCell(
     }
 }
 
-private fun PcMasterLookupItem.toProductLabel(): String = "${code} / ${name}"
+private fun PcMasterLookupItem.toProductLabel(): String = "$code / $name"
 
 private fun PcMasterLookupItem.toLocationLabel(): String {
     return if (warehouseCode.isNullOrBlank()) {
         code
     } else {
-        "${code} / 倉庫:${warehouseCode}"
+        "$code / 倉庫:${warehouseCode}"
     }
 }
 
-private fun PcMasterLookupItem.toReasonLabel(): String = "${code} / ${name}"
+private fun PcMasterLookupItem.toReasonLabel(): String = "$code / $name"
 
 private fun StockMovementDto.toAdjustmentHistoryRowModel(): AdjustmentHistoryRowModel {
     val adjustedAt = runCatching {

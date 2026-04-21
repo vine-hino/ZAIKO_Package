@@ -29,10 +29,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.vine.inventory_contract.StockBalanceDto
+import com.vine.pc_app.domain.OperationBodyCell
+import com.vine.pc_app.domain.OperationEmptyState
+import com.vine.pc_app.domain.OperationHeaderCard
+import com.vine.pc_app.domain.OperationHeaderCell
+import com.vine.pc_app.domain.OperationPageBg
+import com.vine.pc_app.domain.OperationResultCard
+import com.vine.pc_app.domain.OperationRowEvenBg
+import com.vine.pc_app.domain.OperationRowOddBg
+import com.vine.pc_app.domain.OperationSearchCard
+import com.vine.pc_app.domain.OperationTableHeaderBg
+import com.vine.pc_app.domain.SimpleDropdownField
+import com.vine.pc_app.domain.SummaryCountBg
+import com.vine.pc_app.domain.SummaryMetricCard
+import com.vine.pc_app.domain.SummaryQtyBg
+import com.vine.pc_app.domain.SummaryWarehouseBg
+import com.vine.pc_app.domain.operationDateTimeFormatter
+import com.vine.pc_app.domain.operationQuantityFormatter
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 
 data class StockReferenceRowModel(
     val productCode: String,
