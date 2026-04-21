@@ -14,6 +14,7 @@ import com.vine.ht_operations.ui.HtCompletedScreen
 import com.vine.ht_operations.ui.HtInboundRoute
 import com.vine.ht_operations.ui.HtOutboundRoute
 import com.vine.ht_operations.ui.HtPreparingScreen
+import com.vine.ht_operations.ui.HtStockListScreen
 import com.vine.ht_operations.ui.HtStocktakeScreen
 
 @Composable
@@ -37,12 +38,24 @@ fun ZaikoNavHost() {
 
         composable(ZaikoRoute.HT_HOME) {
             HtHomeRoute(
-                onStockClick = { navController.navigate(ZaikoRoute.htPreparing("在庫照会")) },
+                onStockClick = { navController.navigate(ZaikoRoute.HT_STOCK_LIST) },
                 onInboundClick = { navController.navigate(ZaikoRoute.HT_INBOUND) },
                 onOutboundClick = { navController.navigate(ZaikoRoute.HT_OUTBOUND) },
-                onMoveClick = { navController.navigate(ZaikoRoute.htPreparing("在庫移動")) },
                 onStocktakeClick = { navController.navigate(ZaikoRoute.HT_STOCKTAKE) },
-                onAdjustmentClick = { navController.navigate(ZaikoRoute.HT_ADJUSTMENT) },
+            )
+        }
+
+        composable(ZaikoRoute.HT_STOCK_LIST) {
+            HtStockListScreen(
+                onBack = { navController.popBackStack() },
+                onSelectStock = { productCode, _, locationCode ->
+                    navController.navigate(
+                        ZaikoRoute.htAdjustment(
+                            productCode = productCode,
+                            locationCode = locationCode,
+                        ),
+                    )
+                },
             )
         }
 
@@ -73,12 +86,33 @@ fun ZaikoNavHost() {
             )
         }
 
-        composable(ZaikoRoute.HT_ADJUSTMENT) {
+        composable(
+            route = ZaikoRoute.HT_ADJUSTMENT,
+            arguments = listOf(
+                navArgument(ZaikoRoute.HT_ADJUSTMENT_PRODUCT_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument(ZaikoRoute.HT_ADJUSTMENT_LOCATION_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) { backStackEntry ->
+            val productCode = backStackEntry.arguments
+                ?.getString(ZaikoRoute.HT_ADJUSTMENT_PRODUCT_ARG)
+                ?.ifBlank { null }
+            val locationCode = backStackEntry.arguments
+                ?.getString(ZaikoRoute.HT_ADJUSTMENT_LOCATION_ARG)
+                ?.ifBlank { null }
+
             HtAdjustmentScreen(
                 onBack = { navController.popBackStack() },
                 onComplete = { message ->
                     navController.navigate(ZaikoRoute.htResult(message))
                 },
+                initialProductCode = productCode,
+                initialLocationCode = locationCode,
             )
         }
 

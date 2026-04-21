@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun PcAppShell() {
     val selectedMenu = remember { mutableStateOf(PcMenu.DASHBOARD) }
+    val stockSelectedForAdjustment = remember { mutableStateOf<StockReferenceRowModel?>(null) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -51,8 +52,6 @@ fun PcAppShell() {
                         onOpenInbound = { selectedMenu.value = PcMenu.INBOUND },
                         onOpenOutbound = { selectedMenu.value = PcMenu.OUTBOUND },
                         onOpenStocktake = { selectedMenu.value = PcMenu.STOCKTAKE },
-                        onOpenMove = { selectedMenu.value = PcMenu.MOVE },
-                        onOpenAdjustment = { selectedMenu.value = PcMenu.ADJUSTMENT },
                         onOpenStock = { selectedMenu.value = PcMenu.STOCK },
                         onOpenMaster = { selectedMenu.value = PcMenu.MASTER },
                         onOpenSync = { selectedMenu.value = PcMenu.SYNC },
@@ -65,14 +64,19 @@ fun PcAppShell() {
 
                     PcMenu.OUTBOUND -> PcOutboundManagementScreen()
 
-                    PcMenu.MOVE -> PcPlaceholderScreen(
-                        title = "移動管理",
-                        description = "将来はロケーション移動、倉庫間移動の管理をここへ集約します。",
+                    PcMenu.STOCK -> PcStockReferenceScreen(
+                        onOpenAdjustment = { row ->
+                            stockSelectedForAdjustment.value = row
+                            selectedMenu.value = PcMenu.STOCK
+                        },
+                        adjustmentContent = {
+                            PcAdjustmentManagementScreen(
+                                initialProductCode = stockSelectedForAdjustment.value?.productCode,
+                                initialWarehouseCode = stockSelectedForAdjustment.value?.warehouseName,
+                                initialLocationCode = stockSelectedForAdjustment.value?.locationName,
+                            )
+                        },
                     )
-
-                    PcMenu.ADJUSTMENT -> PcAdjustmentManagementScreen()
-
-                    PcMenu.STOCK -> PcStockReferenceScreen()
 
                     PcMenu.MASTER -> PcMasterManagementScreen()
 

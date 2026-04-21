@@ -37,9 +37,7 @@ fun HtHomeRoute(
     onStockClick: () -> Unit,
     onInboundClick: () -> Unit,
     onOutboundClick: () -> Unit,
-    onMoveClick: () -> Unit,
     onStocktakeClick: () -> Unit,
-    onAdjustmentClick: () -> Unit,
     viewModel: HtHomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -51,9 +49,7 @@ fun HtHomeRoute(
             onStockClick = onStockClick,
             onInboundClick = onInboundClick,
             onOutboundClick = onOutboundClick,
-            onMoveClick = onMoveClick,
             onStocktakeClick = onStocktakeClick,
-            onAdjustmentClick = onAdjustmentClick,
             onRefresh = viewModel::refresh,
         )
     }
@@ -72,18 +68,14 @@ private fun HtHomeContent(
     onStockClick: () -> Unit,
     onInboundClick: () -> Unit,
     onOutboundClick: () -> Unit,
-    onMoveClick: () -> Unit,
     onStocktakeClick: () -> Unit,
-    onAdjustmentClick: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     val menuItems = listOf(
         HtMenuItem("在庫照会", "商品・ロケーション別の在庫確認", onStockClick),
         HtMenuItem("入庫登録", "受入・格納の登録", onInboundClick),
         HtMenuItem("出庫登録", "払出・出荷の登録", onOutboundClick),
-        HtMenuItem("在庫移動", "棚間・保管場所の移動", onMoveClick),
         HtMenuItem("棚卸入力", "実棚数の入力と差異確認", onStocktakeClick),
-        HtMenuItem("在庫調整", "破損・誤差・補正の登録", onAdjustmentClick),
     )
 
     Column(

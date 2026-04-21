@@ -3,11 +3,12 @@ package com.vine.ht_operations.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,19 +17,102 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vine.designsystem.component.ZaikoScreenScaffold
 import com.vine.ht_operations.presentation.HtAdjustmentViewModel
-import com.vine.ht_operations.presentation.HtMoveViewModel
-import com.vine.ht_operations.presentation.HtStockHistoryViewModel
 import com.vine.ht_operations.presentation.HtStockListViewModel
 import com.vine.ht_operations.presentation.HtStocktakeViewModel
+
+@Composable
+fun HtStockListScreen(
+    onBack: () -> Unit,
+    onSelectStock: (productCode: String, warehouseCode: String, locationCode: String) -> Unit,
+    viewModel: HtStockListViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    ZaikoScreenScaffold(
+        title = "HT 在庫照会",
+        onBack = onBack,
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = uiState.keyword,
+                onValueChange = viewModel::onKeywordChanged,
+                label = { Text("商品コード / バーコード") },
+                singleLine = true,
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = viewModel::search, enabled = !uiState.isLoading) {
+                    Text("検索")
+                }
+                TextButton(onClick = viewModel::search, enabled = !uiState.isLoading) {
+                    Text("再読込")
+                }
+            }
+
+            if (uiState.errorMessage != null) {
+                Text(
+                    text = uiState.errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+
+            if (uiState.isLoading) {
+                CircularProgressIndicator()
+            }
+
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                uiState.items.forEach { item ->
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = "${item.productCode} ${item.productName}",
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("倉庫: ${item.warehouseCode} / ロケーション: ${item.locationCode}")
+                            Text("在庫数: ${item.quantity}")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    onSelectStock(
+                                        item.productCode,
+                                        item.warehouseCode,
+                                        item.locationCode,
+                                    )
+                                },
+                            ) {
+                                Text("この在庫を調整")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun HtStocktakeScreen(
@@ -126,8 +210,17 @@ fun HtStocktakeScreen(
 fun HtAdjustmentScreen(
     onBack: () -> Unit,
     onComplete: (String) -> Unit,
+    initialProductCode: String? = null,
+    initialLocationCode: String? = null,
     viewModel: HtAdjustmentViewModel = hiltViewModel(),
 ) {
+    LaunchedEffect(initialProductCode, initialLocationCode) {
+        viewModel.setInitialTarget(
+            productCode = initialProductCode,
+            locationCode = initialLocationCode,
+        )
+    }
+
     val completedMessage = viewModel.completedMessage
     LaunchedEffect(completedMessage) {
         completedMessage?.let {
