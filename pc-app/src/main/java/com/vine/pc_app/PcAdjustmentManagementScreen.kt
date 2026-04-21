@@ -1,4 +1,5 @@
-package com.vine.pc_app
+package com.vine.pc_app.ui
+import com.vine.pc_app.data.PcDependencies
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.vine.inventory_contract.RegisterStockMovementRequest
 import com.vine.inventory_contract.StockMovementDto
 import com.vine.inventory_contract.StockOperation
-import com.vine.pc_app.network.PcMasterLookupItem
+import com.vine.pc_app.data.network.PcMasterLookupItem
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 

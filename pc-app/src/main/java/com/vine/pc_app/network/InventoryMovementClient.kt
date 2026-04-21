@@ -1,4 +1,4 @@
-package com.vine.pc_app.network
+package com.vine.pc_app.data.network
 
 import com.vine.inventory_contract.RegisterStockMovementRequest
 import com.vine.inventory_contract.StockMovementDto

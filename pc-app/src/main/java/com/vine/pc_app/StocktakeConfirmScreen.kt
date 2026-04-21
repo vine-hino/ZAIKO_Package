@@ -1,4 +1,4 @@
-package com.vine.pcapp
+package com.vine.pc_app.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +32,7 @@ import com.vine.inventory_contract.GetStocktakeDetailsQuery
 import com.vine.inventory_contract.GetStocktakeSummariesQuery
 import com.vine.inventory_contract.StocktakeDetail
 import com.vine.inventory_contract.StocktakeSummary
-import com.vine.pc_app.PcDependencies
+import com.vine.pc_app.data.PcDependencies
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter

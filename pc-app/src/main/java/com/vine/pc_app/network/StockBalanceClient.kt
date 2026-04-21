@@ -1,4 +1,4 @@
-package com.vine.pc_app.network
+package com.vine.pc_app.data.network
 
 import com.vine.inventory_contract.StockBalanceListResponse
 import io.ktor.client.HttpClient

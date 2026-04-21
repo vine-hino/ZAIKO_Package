@@ -1,4 +1,5 @@
-package com.vine.pc_app
+package com.vine.pc_app.ui
+import com.vine.pc_app.data.PcDependencies
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

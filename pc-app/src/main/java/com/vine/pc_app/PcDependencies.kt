@@ -1,7 +1,7 @@
-package com.vine.pc_app
+package com.vine.pc_app.data
 
-import com.vine.pc_app.network.InventoryMovementClient
-import com.vine.pc_app.network.InventoryRealtimeClient
+import com.vine.pc_app.data.network.InventoryMovementClient
+import com.vine.pc_app.data.network.InventoryRealtimeClient
 import com.vine.pc_data_postgres.InboundJsonImporter
 import com.vine.pc_data_postgres.InboundRepository
 import com.vine.pc_data_postgres.OutboundJsonImporter
@@ -19,9 +19,9 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import com.vine.pc_app.network.StocktakeServerClient
-import com.vine.pc_app.network.StockBalanceClient
-import com.vine.pc_app.network.MasterLookupClient
+import com.vine.pc_app.data.network.StocktakeServerClient
+import com.vine.pc_app.data.network.StockBalanceClient
+import com.vine.pc_app.data.network.MasterLookupClient
 import com.vine.pc_data_postgres.MasterRepository
 import com.vine.pc_data_postgres.PostgresMasterRepository
 

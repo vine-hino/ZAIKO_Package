@@ -1,4 +1,4 @@
-package com.vine.ht_operations
+package com.vine.ht_operations.ui
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vine.designsystem.component.ZaikoScreenScaffold
+import com.vine.ht_operations.presentation.HtInboundViewModel
 
 @Composable
 fun HtInboundRoute(

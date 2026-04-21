@@ -1,4 +1,4 @@
-package com.vine.ht_operations
+package com.vine.ht_operations.ui
 
 import com.vine.connector_api.MasterLookupItem
 

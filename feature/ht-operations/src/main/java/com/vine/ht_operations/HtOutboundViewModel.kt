@@ -1,10 +1,11 @@
-package com.vine.ht_operations
+package com.vine.ht_operations.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vine.connector_api.MasterLookupItem
 import com.vine.connector_api.MasterReferenceGateway
 import com.vine.connector_api.MasterType
+import com.vine.ht_operations.ui.LookupUiState
 import com.vine.connector_api.InventoryGateway
 import com.vine.connector_api.OutboundCommand
 import dagger.hilt.android.lifecycle.HiltViewModel
