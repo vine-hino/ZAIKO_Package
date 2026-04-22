@@ -9,6 +9,8 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import java.time.OffsetDateTime
+import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -43,6 +45,7 @@ class MoveServerClient @Inject constructor(
                         toWarehouseCode = toWarehouseCode,
                         toLocationCode = toLocationCode,
                         note = note,
+                        occurredAt = OffsetDateTime.now(JAPAN_ZONE_ID).toString(),
                     )
                 )
             }.body<StockMoveResult>()
@@ -59,5 +62,9 @@ class MoveServerClient @Inject constructor(
                 message = error.message ?: "サーバー通信に失敗しました",
             )
         }
+    }
+
+    private companion object {
+        val JAPAN_ZONE_ID: ZoneId = ZoneId.of("Asia/Tokyo")
     }
 }

@@ -52,6 +52,9 @@ import com.vine.pc_app.domain.operationQuantityFormatter
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import java.time.ZoneId
+
+private val japanZoneId: ZoneId = ZoneId.of("Asia/Tokyo")
 
 data class StockReferenceRowModel(
     val productCode: String,
@@ -404,7 +407,7 @@ private fun StockBalanceDto.toRowModel(): StockReferenceRowModel {
 
 private fun parseUpdatedAt(value: String): LocalDateTime {
     return runCatching {
-        OffsetDateTime.parse(value).toLocalDateTime()
+        OffsetDateTime.parse(value).atZoneSameInstant(japanZoneId).toLocalDateTime()
     }.getOrElse {
         LocalDateTime.now()
     }
