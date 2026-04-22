@@ -20,6 +20,9 @@ import com.vine.inventory_contract.StockMovementDto
 import com.vine.inventory_contract.StockOperation
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
+import java.time.ZoneId
+
+private val japanZoneId: ZoneId = ZoneId.of("Asia/Tokyo")
 
 @Composable
 fun PcInboundManagementScreen() {
@@ -80,7 +83,7 @@ fun PcInboundManagementScreen() {
 private fun StockMovementDto.toInboundRowModel(): InboundRowModel {
     return InboundRowModel(
         inboundNo = referenceNo,
-        receivedAt = OffsetDateTime.parse(occurredAt).toLocalDateTime(),
+        receivedAt = OffsetDateTime.parse(occurredAt).atZoneSameInstant(japanZoneId).toLocalDateTime(),
         productCode = itemId,
         productName = itemName,
         barcode = null,
