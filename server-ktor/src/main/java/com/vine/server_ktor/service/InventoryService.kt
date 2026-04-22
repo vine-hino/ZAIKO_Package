@@ -14,6 +14,7 @@ import com.vine.server_ktor.realtime.InventoryBroadcaster
 import com.vine.server_ktor.repository.StockMovementRepository
 import io.ktor.server.websocket.DefaultWebSocketServerSession
 import java.time.Instant
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -37,7 +38,7 @@ class InventoryService(
             }
         }
 
-        val now = Instant.now()
+        val now = request.occurredAt.toInstantOrNow()
         val movement = StockMovementDto(
             id = UUID.randomUUID().toString(),
             referenceNo = createReferenceNo(request.operation, now),
@@ -77,7 +78,7 @@ class InventoryService(
             "from and to location must be different"
         }
 
-        val now = Instant.now()
+        val now = request.occurredAt.toInstantOrNow()
         val referenceNo = createMoveReferenceNo(now)
 
         val outboundMovement = StockMovementDto(
@@ -287,4 +288,15 @@ class InventoryService(
         val warehouseCode: String,
         val locationCode: String,
     )
+
+    private fun String?.toInstantOrNow(): Instant {
+        if (this.isNullOrBlank()) {
+            return Instant.now()
+        }
+        return runCatching {
+            OffsetDateTime.parse(this).toInstant()
+        }.getOrElse {
+            Instant.now()
+        }
+    }
 }

@@ -21,6 +21,7 @@ data class RegisterStockMovementRequest(
     val note: String? = null,
     val adjustmentReasonCode: String? = null,
     val adjustmentReasonName: String? = null,
+    val occurredAt: String? = null,
 )
 
 @Serializable
@@ -34,6 +35,7 @@ data class RegisterStockMoveRequest(
     val toWarehouseCode: String,
     val toLocationCode: String,
     val note: String? = null,
+    val occurredAt: String? = null,
 )
 
 @Serializable
